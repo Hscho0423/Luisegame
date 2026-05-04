@@ -26,11 +26,9 @@
     #layout {
       width: min(1100px, 98vw);
       display: flex;
-      gap: 18px;
       align-items: flex-start;
       justify-content: center;
       padding: 18px 10px;
-      flex-wrap: wrap;
     }
     #main {
       display: flex;
@@ -59,46 +57,49 @@
       line-height: 1.45;
     }
     #settings {
-      width: min(160px, 96vw);
-      max-height: 50vh;
-      overflow: auto;
+      width: min(980px, 96vw);
       font-size: 0.5rem;
       background: rgba(255, 255, 255, 0.72);
       border: 1px solid rgba(0, 0, 0, 0.10);
-      border-radius: 12px;
-      padding: 14px 14px 12px;
+      border-radius: 10px;
+      padding: 4px 8px;
+      margin: 0 0 6px;
       backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     #settings h2 {
-      margin: 0 0 10px;
+      margin: 0;
       font-size: 0.5rem;
+      white-space: nowrap;
     }
     .field {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
+      display: flex;
+      gap: 4px;
       align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px dashed rgba(0, 0, 0, 0.12);
+      padding: 0;
+      border-bottom: none;
     }
-    .field:last-of-type { border-bottom: none; }
     .field label { font-size: 0.5rem; opacity: 0.9; }
     .field input {
-      width: 110px;
+      width: 68px;
       font: inherit;
-      padding: 8px 10px;
-      border-radius: 10px;
+      padding: 2px 5px;
+      border-radius: 6px;
       border: 1px solid rgba(0, 0, 0, 0.18);
       background: rgba(255, 255, 255, 0.9);
     }
     #apply-btn {
-      width: 100%;
-      margin-top: 12px;
+      width: auto;
+      margin-top: 0;
       font: inherit;
       font-weight: 700;
-      padding: 10px 14px;
+      padding: 3px 8px;
       border: none;
-      border-radius: 10px;
+      border-radius: 6px;
       background: #1a4a8a;
       color: white;
       cursor: pointer;
@@ -106,20 +107,14 @@
     #apply-btn:hover { filter: brightness(1.05); }
     #apply-btn:active { transform: scale(0.99); }
     #settings .note {
-      margin: 10px 0 0;
+      margin: 0;
       font-size: 0.5rem;
       opacity: 0.75;
       line-height: 1.4;
     }
     @media (max-width: 900px) {
-      #layout {
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-      }
       #settings {
-        width: min(360px, 96vw);
-        max-height: none;
+        width: min(96vw, 520px);
       }
       canvas {
         max-width: 96vw;
@@ -172,26 +167,25 @@
   <div id="layout">
     <div id="main">
       <h1>루이 게임</h1>
+      <aside id="settings">
+        <h2>사용자 설정</h2>
+        <div class="field">
+          <label for="size-input">세로 타일</label>
+          <input id="size-input" type="number" min="5" max="30" step="1" value="10" />
+        </div>
+        <div class="field">
+          <label for="timer-input">타이머(초)</label>
+          <input id="timer-input" type="number" min="10" max="999" step="1" value="120" />
+        </div>
+        <button type="button" id="apply-btn">적용</button>
+        <p class="note">가로=세로×2 / 적용 시 새 게임 시작</p>
+      </aside>
       <p id="status"></p>
       <canvas id="board"></canvas>
       <p class="hint" id="hint">
         17×17 판, 제한 시간 120초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.
       </p>
     </div>
-
-    <aside id="settings">
-      <h2>사용자 설정</h2>
-      <div class="field">
-        <label for="size-input">세로 타일 개수</label>
-        <input id="size-input" type="number" min="5" max="30" step="1" value="10" />
-      </div>
-      <div class="field">
-        <label for="timer-input">타이머 (초)</label>
-        <input id="timer-input" type="number" min="10" max="999" step="1" value="120" />
-      </div>
-      <button type="button" id="apply-btn">적용하고 새로 시작</button>
-      <p class="note">적용 시 게임이 새로 시작됩니다. (미리보기/종료 상태도 초기화)</p>
-    </aside>
   </div>
 
   <div id="overlay" aria-hidden="true">
@@ -293,21 +287,15 @@
         cy + R * 0.2,
         R * 1.25
       );
-      if (sel) {
-        g.addColorStop(0, "#ffb199");
-        g.addColorStop(0.35, "#ff6b6b");
-        g.addColorStop(0.75, "#d62828");
-        g.addColorStop(1, "#7d1515");
-      } else {
-        g.addColorStop(0, "#ffc9c9");
-        g.addColorStop(0.35, "#f94144");
-        g.addColorStop(0.7, "#c1121f");
-        g.addColorStop(1, "#660708");
-      }
+      g.addColorStop(0, "#ffc9c9");
+      g.addColorStop(0.35, "#f94144");
+      g.addColorStop(0.7, "#c1121f");
+      g.addColorStop(1, "#660708");
       ctx.fillStyle = g;
       ctx.fill();
-      ctx.strokeStyle = sel ? "#4a0404" : "#380607";
-      ctx.lineWidth = sel ? 2 : 1.35;
+      // 드래그 선택은 색 변화보다 "테두리 굵기"로만 강조
+      ctx.strokeStyle = sel ? "#7a0b0d" : "#380607";
+      ctx.lineWidth = sel ? 2.6 : 1.35;
       ctx.stroke();
 
       const hg = ctx.createRadialGradient(cx - R * 0.45, cy - R * 0.5, 0, cx - R * 0.35, cy - R * 0.4, R * 0.85);
@@ -345,6 +333,8 @@
     let previewMoves = [];
     let previewIndex = 0;
     let previewRect = null; // {r0,c0,r1,c1} | null
+    let dragStartPos = null; // {x,y} | null
+    let dragNowPos = null;   // {x,y} | null
     const CLEAR_POP_MS = 500;
     const CLEAR_POP_SRC = "./clear-pop.png";
     const clearPopImage = new Image();
@@ -431,18 +421,45 @@
       }
     }
 
-    // --- voice (timer) ---
+    // --- timer cue sound ---
     let spoken30 = false;
     let lastCountdownSpoken = null; // number | null
-    function speak(text) {
+    function playTimerCue(secLeft) {
       try {
-        if (!("speechSynthesis" in window)) return;
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = "ko-KR";
-        u.rate = 1.02;
-        u.pitch = 1.0;
-        window.speechSynthesis.speak(u);
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        const playBeep = (freq, start, dur, vol) => {
+          const osc = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, start);
+          g.gain.setValueAtTime(0.0001, start);
+          g.gain.exponentialRampToValueAtTime(vol, start + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+          osc.connect(g);
+          g.connect(audioCtx.destination);
+          osc.start(start);
+          osc.stop(start + dur + 0.01);
+        };
+
+        if (secLeft === 30) {
+          // 30초 알림: 약 2.5초 길이의 경쾌한 알림
+          const total = 2.5;
+          const interval = 0.33;
+          const dur = 0.16;
+          for (let t = 0; t < total; t += interval) {
+            const f = (Math.floor(t / interval) % 2 === 0) ? 880 : 1174.66;
+            playBeep(f, now + t, dur, 0.16);
+          }
+          return;
+        }
+        // 10초 이하는 1음 카운트
+        const high = secLeft <= 3;
+        playBeep(high ? 1320 : 1046.5, now, 0.13, 0.18);
       } catch (_) {
         // ignore
       }
@@ -526,12 +543,17 @@
       return pathHas(r, c);
     }
 
-    function hitCell(clientX, clientY) {
+    function getCanvasPoint(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       const x = (clientX - rect.left) * scaleX;
       const y = (clientY - rect.top) * scaleY;
+      return { x, y };
+    }
+
+    function hitCell(clientX, clientY) {
+      const { x, y } = getCanvasPoint(clientX, clientY);
       if (x < PAD || y < PAD) return null;
       const c = Math.floor((x - PAD) / CELL);
       const r = Math.floor((y - PAD) / CELL);
@@ -620,16 +642,16 @@
         }
       }
 
-      // 드래그 중: 현재 직사각형 범위를 또렷하게 표시 + 합 말풍선
+      // 드래그 중: 실제 터치 시작점부터 범위 표시 + 합 말풍선(항상 바깥)
       if (gameRunning && dragging && anchor && dragCorner) {
         const rmin = Math.min(anchor[0], dragCorner[0]);
         const rmax = Math.max(anchor[0], dragCorner[0]);
         const cmin = Math.min(anchor[1], dragCorner[1]);
         const cmax = Math.max(anchor[1], dragCorner[1]);
-        const x = PAD + cmin * CELL + 1;
-        const y = PAD + rmin * CELL + 1;
-        const w = (cmax - cmin + 1) * CELL - 2;
-        const h = (rmax - rmin + 1) * CELL - 2;
+        const tileX = PAD + cmin * CELL + 1;
+        const tileY = PAD + rmin * CELL + 1;
+        const tileW = (cmax - cmin + 1) * CELL - 2;
+        const tileH = (rmax - rmin + 1) * CELL - 2;
 
         // 합 계산 (빈칸은 0)
         let sum = 0;
@@ -640,28 +662,48 @@
         }
 
         ctx.save();
-        ctx.fillStyle = "rgba(26, 74, 138, 0.10)";
-        ctx.strokeStyle = "rgba(26, 74, 138, 0.95)";
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.roundRect(x, y, w, h, 10);
-        ctx.fill();
-        ctx.stroke();
+        if (dragStartPos && dragNowPos) {
+          const rx = Math.min(dragStartPos.x, dragNowPos.x);
+          const ry = Math.min(dragStartPos.y, dragNowPos.y);
+          const rw = Math.abs(dragNowPos.x - dragStartPos.x);
+          const rh = Math.abs(dragNowPos.y - dragStartPos.y);
+          ctx.fillStyle = "rgba(26, 74, 138, 0.08)";
+          ctx.beginPath();
+          ctx.roundRect(rx, ry, rw, rh, 10);
+          ctx.fill();
+        }
 
-        // 말풍선(상단 중앙) - 캔버스 밖으로 나가지 않게 clamp
+        // 말풍선: 선택 타일 바깥에만 배치
         const text = String(sum);
         const bubbleFont = "600 12px Segoe UI, system-ui, sans-serif";
         ctx.font = bubbleFont;
         const tw = ctx.measureText(text).width;
         const padX = 10;
-        const padY = 6;
         const bw = Math.max(30, tw + padX * 2);
         const bh = 24;
-        let bx = x + w / 2 - bw / 2;
-        bx = Math.max(6, Math.min(canvas.width - bw - 6, bx));
-        let by = y - (bh + 10);
-        // 위로 공간이 부족하면 사각형 안쪽 위에 표시
-        if (by < 6) by = y + 6;
+        let bx;
+        let by;
+        const margin = 8;
+        const upX = Math.max(6, Math.min(canvas.width - bw - 6, tileX + tileW / 2 - bw / 2));
+        const upY = tileY - (bh + margin);
+        const downX = upX;
+        const downY = tileY + tileH + margin;
+        const rightX = tileX + tileW + margin;
+        const rightY = Math.max(6, Math.min(canvas.height - bh - 6, tileY + tileH / 2 - bh / 2));
+        const leftX = tileX - bw - margin;
+        const leftY = rightY;
+
+        if (upY >= 6) {
+          bx = upX; by = upY;
+        } else if (downY + bh <= canvas.height - 6) {
+          bx = downX; by = downY;
+        } else if (rightX + bw <= canvas.width - 6) {
+          bx = rightX; by = rightY;
+        } else if (leftX >= 6) {
+          bx = leftX; by = leftY;
+        } else {
+          bx = upX; by = 6;
+        }
 
         // 말풍선 본체
         ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
@@ -672,14 +714,14 @@
         ctx.fill();
         ctx.stroke();
 
-        // 꼬리(말풍선이 사각형 위에 있을 때만 위쪽에)
-        const tailToTop = by < y;
-        if (tailToTop) {
-          const tx = x + w / 2;
+        // 꼬리(말풍선이 타일 위에 있을 때)
+        const bubbleAbove = by + bh <= tileY;
+        if (bubbleAbove) {
+          const tx = tileX + tileW / 2;
           const tipX = Math.max(bx + 14, Math.min(bx + bw - 14, tx));
           const tipY = by + bh;
           const baseY = tipY;
-          const peakY = Math.min(y + 2, tipY + 10);
+          const peakY = Math.min(tileY + 2, tipY + 10);
           ctx.beginPath();
           ctx.moveTo(tipX - 7, baseY);
           ctx.lineTo(tipX + 7, baseY);
@@ -783,12 +825,12 @@
         timeLeft--;
         if (timeLeft === 30 && !spoken30) {
           spoken30 = true;
-          speak("30초 남았습니다");
+          playTimerCue(30);
         }
         if (timeLeft <= 10 && timeLeft >= 1) {
           if (lastCountdownSpoken !== timeLeft) {
             lastCountdownSpoken = timeLeft;
-            speak(String(timeLeft));
+            playTimerCue(timeLeft);
           }
         }
         if (timeLeft <= 0) {
@@ -816,9 +858,12 @@
       const cell = hitCell(e.clientX, e.clientY);
       if (!cell) return;
       const [r, c] = cell;
+      const p = getCanvasPoint(e.clientX, e.clientY);
       dragging = true;
       anchor = [r, c];
       dragCorner = [r, c];
+      dragStartPos = p;
+      dragNowPos = p;
       path = cellsInRect(r, c, r, c);
       draw();
     }
@@ -829,6 +874,7 @@
       if (!cell) return;
       const [r, c] = cell;
       dragCorner = [r, c];
+      dragNowPos = getCanvasPoint(e.clientX, e.clientY);
       path = cellsInRect(anchor[0], anchor[1], r, c);
       draw();
     }
@@ -839,6 +885,8 @@
       if (!gameRunning) {
         anchor = null;
         dragCorner = null;
+        dragStartPos = null;
+        dragNowPos = null;
         path = [];
         draw();
         return;
@@ -847,6 +895,7 @@
       if (anchor) {
         const end = e && typeof e.clientX === "number" ? hitCell(e.clientX, e.clientY) : null;
         if (end) dragCorner = end;
+        if (e && typeof e.clientX === "number") dragNowPos = getCanvasPoint(e.clientX, e.clientY);
         const [r0, c0] = anchor;
         const [r1, c1] = dragCorner || anchor;
         const eff = cellsInRect(r0, c0, r1, c1);
@@ -870,6 +919,8 @@
           if (!anyMoveExists()) {
             anchor = null;
             dragCorner = null;
+            dragStartPos = null;
+            dragNowPos = null;
             path = [];
             draw();
             endGame("nomoves");
@@ -880,6 +931,8 @@
 
       anchor = null;
       dragCorner = null;
+      dragStartPos = null;
+      dragNowPos = null;
       path = [];
       draw();
     }
