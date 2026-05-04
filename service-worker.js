@@ -1,6 +1,6 @@
-const CACHE_NAME = "loui-game-v2";
+const CACHE_NAME = "loui-game-v3";
 const ASSETS = [
-  "./",
+  "./index.html",
   "./apple_game.html",
   "./manifest.json",
   "./icon.png",
