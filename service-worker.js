@@ -1,9 +1,10 @@
-const CACHE_NAME = "loui-game-v1";
+const CACHE_NAME = "loui-game-v2";
 const ASSETS = [
   "./",
   "./apple_game.html",
   "./manifest.json",
-  "./icon.png"
+  "./icon.png",
+  "./clear-pop.png"
 ];
 
 self.addEventListener("install", (event) => {
