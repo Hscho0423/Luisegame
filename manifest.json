@@ -1,0 +1,19 @@
+{
+  "name": "루이 게임",
+  "short_name": "루이 게임",
+  "description": "합이 10이 되는 직사각형 타일을 지우는 퍼즐 게임",
+  "lang": "ko-KR",
+  "start_url": "./apple_game.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#bcdcff",
+  "theme_color": "#bcdcff",
+  "icons": [
+    {
+      "src": "./icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

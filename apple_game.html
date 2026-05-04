@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#bcdcff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="루이 게임" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="./icon.png" />
+  <title>루이 게임 — 합이 10</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #bcdcff;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: #1a1a1a;
+    }
+    #layout {
+      width: min(1100px, 98vw);
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 18px 10px;
+      flex-wrap: wrap;
+    }
+    #main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    h1 { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+    #status { font-size: 0.95rem; margin-bottom: 8px; opacity: 0.95; text-align: center; }
+    canvas {
+      display: block;
+      cursor: crosshair;
+      border-radius: 8px;
+      touch-action: none;
+      max-width: min(96vw, 520px);
+      height: auto;
+    }
+    canvas.ended { pointer-events: none; cursor: default; opacity: 0.85; }
+    .hint {
+      font-size: 0.8rem;
+      opacity: 0.75;
+      margin-top: 10px;
+      max-width: 480px;
+      text-align: center;
+      line-height: 1.45;
+    }
+    #settings {
+      width: min(160px, 96vw);
+      max-height: 50vh;
+      overflow: auto;
+      font-size: 0.5rem;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(0, 0, 0, 0.10);
+      border-radius: 12px;
+      padding: 14px 14px 12px;
+      backdrop-filter: blur(6px);
+    }
+    #settings h2 {
+      margin: 0 0 10px;
+      font-size: 0.5rem;
+    }
+    .field {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px dashed rgba(0, 0, 0, 0.12);
+    }
+    .field:last-of-type { border-bottom: none; }
+    .field label { font-size: 0.5rem; opacity: 0.9; }
+    .field input {
+      width: 110px;
+      font: inherit;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      background: rgba(255, 255, 255, 0.9);
+    }
+    #apply-btn {
+      width: 100%;
+      margin-top: 12px;
+      font: inherit;
+      font-weight: 700;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      background: #1a4a8a;
+      color: white;
+      cursor: pointer;
+    }
+    #apply-btn:hover { filter: brightness(1.05); }
+    #apply-btn:active { transform: scale(0.99); }
+    #settings .note {
+      margin: 10px 0 0;
+      font-size: 0.5rem;
+      opacity: 0.75;
+      line-height: 1.4;
+    }
+    @media (max-width: 900px) {
+      #layout {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      #settings {
+        width: min(360px, 96vw);
+        max-height: none;
+      }
+      canvas {
+        max-width: 96vw;
+      }
+    }
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    #overlay.show { display: flex; }
+    #overlay-box {
+      background: #2d5016;
+      border: 2px solid #ffe066;
+      border-radius: 12px;
+      padding: 28px 32px;
+      text-align: center;
+      min-width: 260px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+    #overlay-box h2 {
+      margin: 0 0 12px;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    #final-score {
+      margin: 0 0 20px;
+      font-size: 1.05rem;
+    }
+    #restart-btn {
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      background: #ffe066;
+      color: #1a1a1a;
+      cursor: pointer;
+    }
+    #restart-btn:hover { filter: brightness(1.05); }
+    #restart-btn:active { transform: scale(0.98); }
+  </style>
+</head>
+<body>
+  <div id="layout">
+    <div id="main">
+      <h1>루이 게임</h1>
+      <p id="status"></p>
+      <canvas id="board"></canvas>
+      <p class="hint" id="hint">
+        17×17 판, 제한 시간 120초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.
+      </p>
+    </div>
+
+    <aside id="settings">
+      <h2>사용자 설정</h2>
+      <div class="field">
+        <label for="size-input">세로 타일 개수</label>
+        <input id="size-input" type="number" min="5" max="30" step="1" value="10" />
+      </div>
+      <div class="field">
+        <label for="timer-input">타이머 (초)</label>
+        <input id="timer-input" type="number" min="10" max="999" step="1" value="120" />
+      </div>
+      <button type="button" id="apply-btn">적용하고 새로 시작</button>
+      <p class="note">적용 시 게임이 새로 시작됩니다. (미리보기/종료 상태도 초기화)</p>
+    </aside>
+  </div>
+
+  <div id="overlay" aria-hidden="true">
+    <div id="overlay-box">
+      <h2 id="overlay-title">시간 종료</h2>
+      <p id="final-score"></p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button type="button" id="restart-btn">다시 하기</button>
+        <button type="button" id="remain-btn" style="display:none;">남은 타일 확인하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getRecommendedRows() {
+      const w = window.innerWidth || 1024;
+      if (w <= 480) return 6;   // phone
+      if (w <= 900) return 10;  // tablet / small viewport
+      return 17;                // desktop
+    }
+
+    let ROWS = getRecommendedRows();
+    let COLS = ROWS * 2;
+    const CELL = 28;
+    const PAD = 14;
+    let GAME_SECONDS = 120;
+
+    const canvas = document.getElementById("board");
+    const ctx = canvas.getContext("2d");
+    const statusEl = document.getElementById("status");
+    const overlay = document.getElementById("overlay");
+    const overlayTitleEl = document.getElementById("overlay-title");
+    const finalScoreEl = document.getElementById("final-score");
+    const restartBtn = document.getElementById("restart-btn");
+    const remainBtn = document.getElementById("remain-btn");
+    const hintEl = document.getElementById("hint");
+    const sizeInput = document.getElementById("size-input");
+    const timerInput = document.getElementById("timer-input");
+    const applyBtn = document.getElementById("apply-btn");
+
+    const fontPx = Math.max(11, Math.round(CELL * 0.56));
+
+    /** 축 정렬 사과 실루엣 (중심 cx,cy · 반지름 R) */
+    function buildAppleBodyPath(cx, cy, R) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - R * 0.88);
+      ctx.bezierCurveTo(
+        cx - R * 0.42,
+        cy - R * 0.8,
+        cx - R * 0.95,
+        cy - R * 0.18,
+        cx - R * 0.9,
+        cy + R * 0.4
+      );
+      ctx.bezierCurveTo(cx - R * 0.72, cy + R * 0.85, cx - R * 0.26, cy + R * 1.05, cx, cy + R * 0.98);
+      ctx.bezierCurveTo(cx + R * 0.26, cy + R * 1.05, cx + R * 0.72, cy + R * 0.85, cx + R * 0.9, cy + R * 0.4);
+      ctx.bezierCurveTo(cx + R * 0.95, cy - R * 0.18, cx + R * 0.42, cy - R * 0.8, cx, cy - R * 0.88);
+      ctx.closePath();
+    }
+
+    function drawStemLeaf(cx, cy, R, stemCols) {
+      ctx.save();
+      ctx.strokeStyle = stemCols.stroke;
+      ctx.lineWidth = Math.max(1, R * 0.13);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - R * 0.86);
+      ctx.quadraticCurveTo(cx + R * 0.1, cy - R * 1.12, cx + R * 0.26, cy - R * 0.94);
+      ctx.stroke();
+      ctx.fillStyle = stemCols.leaf;
+      ctx.beginPath();
+      ctx.ellipse(cx + R * 0.34, cy - R * 1.02, R * 0.24, R * 0.13, -0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /** 빈 칸 / 숫자 칸 공통 사과 실루엣 채우기 */
+    function drawAppleTile(cx, cy, R, opts) {
+      const sel = opts.selected;
+      const empty = opts.empty;
+
+      buildAppleBodyPath(cx, cy, R);
+
+      if (empty) {
+        // 빈칸은 보드 배경색과 동일하게 처리
+        ctx.fillStyle = "#bcdcff";
+        ctx.strokeStyle = sel ? "#ffb366" : "rgba(0,0,0,0.08)";
+        ctx.lineWidth = sel ? 2 : 1.2;
+        ctx.fill();
+        ctx.stroke();
+        return;
+      }
+
+      const g = ctx.createRadialGradient(
+        cx - R * 0.35,
+        cy - R * 0.42,
+        R * 0.08,
+        cx + R * 0.15,
+        cy + R * 0.2,
+        R * 1.25
+      );
+      if (sel) {
+        g.addColorStop(0, "#ffb199");
+        g.addColorStop(0.35, "#ff6b6b");
+        g.addColorStop(0.75, "#d62828");
+        g.addColorStop(1, "#7d1515");
+      } else {
+        g.addColorStop(0, "#ffc9c9");
+        g.addColorStop(0.35, "#f94144");
+        g.addColorStop(0.7, "#c1121f");
+        g.addColorStop(1, "#660708");
+      }
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.strokeStyle = sel ? "#4a0404" : "#380607";
+      ctx.lineWidth = sel ? 2 : 1.35;
+      ctx.stroke();
+
+      const hg = ctx.createRadialGradient(cx - R * 0.45, cy - R * 0.5, 0, cx - R * 0.35, cy - R * 0.4, R * 0.85);
+      hg.addColorStop(0, "rgba(255,255,255,0.45)");
+      hg.addColorStop(0.35, "rgba(255,255,255,0.08)");
+      hg.addColorStop(1, "rgba(255,255,255,0)");
+      buildAppleBodyPath(cx, cy, R);
+      ctx.fillStyle = hg;
+      ctx.fill();
+
+      drawStemLeaf(cx, cy, R, { stroke: "#4e3728", leaf: "#6aaf40" });
+    }
+
+    function resizeCanvas() {
+      canvas.width = COLS * CELL + PAD * 2;
+      canvas.height = ROWS * CELL + PAD * 2;
+    }
+
+    function rand1to9() {
+      return 1 + Math.floor(Math.random() * 9);
+    }
+
+    let grid = [];
+    /** 드래그 시작 칸 · 현재 모서리 — 직사각형 = 두 점의 축정렬 바운딩 박스 */
+    let anchor = null;
+    let dragCorner = null;
+    let path = [];
+    let dragging = false;
+    let score = 0;
+    let timeLeft = GAME_SECONDS;
+    let gameRunning = false;
+    let timerId = null;
+    let endedBy = null; // "time" | "nomoves" | null
+    let previewMode = false;
+    let previewMoves = [];
+    let previewIndex = 0;
+    let previewRect = null; // {r0,c0,r1,c1} | null
+    const CLEAR_POP_MS = 500;
+    const CLEAR_POP_SRC = "file:///C:/Users/wonbi/.cursor/projects/c-Users-wonbi-OneDrive/assets/c__Users_wonbi_AppData_Roaming_Cursor_User_workspaceStorage_b33b4eecb856fa1e91574b5b6a40a96e_images___2-177254db-b520-46d5-8713-9345a6d3dcb3.png";
+    const clearPopImage = new Image();
+    let clearPopReady = false;
+    let clearPopEffects = []; // {r,c,until}
+    let clearPopRafId = null;
+    clearPopImage.addEventListener("load", () => {
+      clearPopReady = true;
+      draw();
+    });
+    clearPopImage.src = CLEAR_POP_SRC;
+
+    function addClearPopEffects(cells) {
+      const until = performance.now() + CLEAR_POP_MS;
+      for (const [r, c] of cells) {
+        clearPopEffects.push({ r, c, until });
+      }
+      ensureClearPopLoop();
+    }
+
+    function ensureClearPopLoop() {
+      if (clearPopRafId != null) return;
+      const tick = () => {
+        const now = performance.now();
+        clearPopEffects = clearPopEffects.filter((e) => e.until > now);
+        draw();
+        if (clearPopEffects.length > 0) {
+          clearPopRafId = requestAnimationFrame(tick);
+        } else {
+          clearPopRafId = null;
+        }
+      };
+      clearPopRafId = requestAnimationFrame(tick);
+    }
+
+    // --- sound (clear: 뾰로롱) ---
+    let audioCtx = null;
+    function playClearSound(clearedCount) {
+      try {
+        const base = Math.max(1, Math.floor(clearedCount || 1));
+        // 요청 규칙: 2개=4음, 이후 타일 1개 증가마다 +4음
+        // 예) 2->4, 3->8, 4->12 ...
+        const n = Math.max(1, Math.min(24, base >= 2 ? (base - 1) * 4 : 1));
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        const master = audioCtx.createGain();
+        master.gain.setValueAtTime(0.0001, now);
+        master.gain.exponentialRampToValueAtTime(1.68, now + 0.01);
+        // 길이는 없앤 개수에 따라 늘어남
+        const step = 0.075; // 한 음 길이
+        const totalDur = Math.min(0.95, 0.10 + n * step);
+        master.gain.exponentialRampToValueAtTime(0.0001, now + totalDur);
+        master.connect(audioCtx.destination);
+
+        // 뾰로롱: 위로 올라가는 음계 (펜타토닉 느낌)
+        const freqs = [740.0, 880.0, 1108.73, 1320.0, 1760.0, 2217.46]; // F#5 A5 C#6 E6 A6 C#7
+
+        for (let i = 0; i < n; i++) {
+          const t0 = now + i * step;
+          const t1 = t0 + step * 0.98;
+          const f = freqs[Math.min(freqs.length - 1, i)];
+
+          const osc = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(f, t0);
+
+          // 짧은 per-note 엔벨로프
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(1.20, t0 + 0.012);
+          g.gain.exponentialRampToValueAtTime(0.0001, t1);
+
+          osc.connect(g);
+          g.connect(master);
+          osc.start(t0);
+          osc.stop(t1 + 0.01);
+        }
+      } catch (_) {
+        // ignore audio failures
+      }
+    }
+
+    // --- voice (timer) ---
+    let spoken30 = false;
+    let lastCountdownSpoken = null; // number | null
+    function speak(text) {
+      try {
+        if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "ko-KR";
+        u.rate = 1.02;
+        u.pitch = 1.0;
+        window.speechSynthesis.speak(u);
+      } catch (_) {
+        // ignore
+      }
+    }
+
+    function buildPrefixSum() {
+      const ps = Array.from({ length: ROWS + 1 }, () => Array(COLS + 1).fill(0));
+      for (let r = 0; r < ROWS; r++) {
+        let rowSum = 0;
+        for (let c = 0; c < COLS; c++) {
+          rowSum += grid[r][c] || 0;
+          ps[r + 1][c + 1] = ps[r][c + 1] + rowSum;
+        }
+      }
+      return ps;
+    }
+
+    function rectSum(ps, r0, c0, r1, c1) {
+      const rmin = Math.min(r0, r1);
+      const rmax = Math.max(r0, r1);
+      const cmin = Math.min(c0, c1);
+      const cmax = Math.max(c0, c1);
+      return ps[rmax + 1][cmax + 1] - ps[rmin][cmax + 1] - ps[rmax + 1][cmin] + ps[rmin][cmin];
+    }
+
+    function anyMoveExists() {
+      const ps = buildPrefixSum();
+      for (let r0 = 0; r0 < ROWS; r0++) {
+        for (let c0 = 0; c0 < COLS; c0++) {
+          for (let r1 = r0; r1 < ROWS; r1++) {
+            for (let c1 = c0; c1 < COLS; c1++) {
+              const cellCount = (r1 - r0 + 1) * (c1 - c0 + 1);
+              if (cellCount < 2) continue;
+              if (rectSum(ps, r0, c0, r1, c1) === 10) return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    function collectMoves(limit = 200) {
+      const ps = buildPrefixSum();
+      const moves = [];
+      for (let r0 = 0; r0 < ROWS; r0++) {
+        for (let c0 = 0; c0 < COLS; c0++) {
+          for (let r1 = r0; r1 < ROWS; r1++) {
+            for (let c1 = c0; c1 < COLS; c1++) {
+              const cellCount = (r1 - r0 + 1) * (c1 - c0 + 1);
+              if (cellCount < 2) continue;
+              if (rectSum(ps, r0, c0, r1, c1) === 10) {
+                moves.push({ r0, c0, r1, c1 });
+                if (moves.length >= limit) return moves;
+              }
+            }
+          }
+        }
+      }
+      return moves;
+    }
+
+    function cellsInRect(r0, c0, r1, c1) {
+      const rmin = Math.min(r0, r1);
+      const rmax = Math.max(r0, r1);
+      const cmin = Math.min(c0, c1);
+      const cmax = Math.max(c0, c1);
+      const cells = [];
+      for (let r = rmin; r <= rmax; r++) {
+        for (let c = cmin; c <= cmax; c++) {
+          cells.push([r, c]);
+        }
+      }
+      return cells;
+    }
+
+    function pathHas(r, c) {
+      return path.some(([pr, pc]) => pr === r && pc === c);
+    }
+
+    function isHighlighted(r, c) {
+      return pathHas(r, c);
+    }
+
+    function hitCell(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (clientX - rect.left) * scaleX;
+      const y = (clientY - rect.top) * scaleY;
+      if (x < PAD || y < PAD) return null;
+      const c = Math.floor((x - PAD) / CELL);
+      const r = Math.floor((y - PAD) / CELL);
+      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) return [r, c];
+      return null;
+    }
+
+    function updateStatusText() {
+      let line = "남은 시간 " + timeLeft + "초  |  점수 " + score + "점";
+      if (!gameRunning) {
+        statusEl.textContent = line;
+        return;
+      }
+      if (dragging && path.length) {
+        let sumPath = 0;
+        for (const [r, c] of path) sumPath += grid[r][c] || 0;
+        line += "  |  드래그 합: " + sumPath + " (정확히 10)";
+      } else {
+        line += "  |  직사각형으로 영역 지정";
+      }
+      statusEl.textContent = line;
+    }
+
+    function draw() {
+      ctx.fillStyle = "#bcdcff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      updateStatusText();
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const val = grid[r][c];
+          const inset = 0.5;
+          const x0 = PAD + c * CELL + inset;
+          const y0 = PAD + r * CELL + inset;
+          const x1 = x0 + CELL - inset * 2;
+          const y1 = y0 + CELL - inset * 2;
+          const cx = (x0 + x1) / 2;
+          const cy = (y0 + y1) / 2 + CELL * 0.05;
+          const R = (Math.min(x1 - x0, y1 - y0) / 2) * 0.96;
+
+          if (val == null) {
+            drawAppleTile(cx, cy, R, { empty: true, selected: isHighlighted(r, c) });
+            continue;
+          }
+          const sel = isHighlighted(r, c);
+          drawAppleTile(cx, cy, R, { empty: false, selected: sel });
+          ctx.font = "600 " + fontPx + "px Segoe UI, system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "#fffdf7";
+          ctx.shadowColor = "rgba(49, 12, 12, 0.55)";
+          ctx.shadowBlur = 3;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 1;
+          ctx.fillText(String(val), cx, cy + R * 0.06);
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
+        }
+      }
+
+      // 타일 제거 연출: 해당 칸에 0.5초간 이미지 표시
+      if (clearPopReady && clearPopEffects.length) {
+        const now = performance.now();
+        clearPopEffects = clearPopEffects.filter((e) => e.until > now);
+        for (const e of clearPopEffects) {
+          const inset = 0.5;
+          const x0 = PAD + e.c * CELL + inset;
+          const y0 = PAD + e.r * CELL + inset;
+          const w = CELL - inset * 2;
+          const h = CELL - inset * 2;
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(x0, y0, w, h, 6);
+          ctx.clip();
+          const iw = clearPopImage.naturalWidth;
+          const ih = clearPopImage.naturalHeight;
+          const scale = Math.max(w / iw, h / ih);
+          const dw = iw * scale;
+          const dh = ih * scale;
+          const dx = x0 + (w - dw) / 2;
+          const dy = y0 + (h - dh) / 2;
+          ctx.drawImage(clearPopImage, dx, dy, dw, dh);
+          ctx.restore();
+        }
+      }
+
+      // 드래그 중: 현재 직사각형 범위를 또렷하게 표시 + 합 말풍선
+      if (gameRunning && dragging && anchor && dragCorner) {
+        const rmin = Math.min(anchor[0], dragCorner[0]);
+        const rmax = Math.max(anchor[0], dragCorner[0]);
+        const cmin = Math.min(anchor[1], dragCorner[1]);
+        const cmax = Math.max(anchor[1], dragCorner[1]);
+        const x = PAD + cmin * CELL + 1;
+        const y = PAD + rmin * CELL + 1;
+        const w = (cmax - cmin + 1) * CELL - 2;
+        const h = (rmax - rmin + 1) * CELL - 2;
+
+        // 합 계산 (빈칸은 0)
+        let sum = 0;
+        for (let rr = rmin; rr <= rmax; rr++) {
+          for (let cc = cmin; cc <= cmax; cc++) {
+            sum += grid[rr][cc] || 0;
+          }
+        }
+
+        ctx.save();
+        ctx.fillStyle = "rgba(26, 74, 138, 0.10)";
+        ctx.strokeStyle = "rgba(26, 74, 138, 0.95)";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        // 말풍선(상단 중앙) - 캔버스 밖으로 나가지 않게 clamp
+        const text = String(sum);
+        const bubbleFont = "600 12px Segoe UI, system-ui, sans-serif";
+        ctx.font = bubbleFont;
+        const tw = ctx.measureText(text).width;
+        const padX = 10;
+        const padY = 6;
+        const bw = Math.max(30, tw + padX * 2);
+        const bh = 24;
+        let bx = x + w / 2 - bw / 2;
+        bx = Math.max(6, Math.min(canvas.width - bw - 6, bx));
+        let by = y - (bh + 10);
+        // 위로 공간이 부족하면 사각형 안쪽 위에 표시
+        if (by < 6) by = y + 6;
+
+        // 말풍선 본체
+        ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+        ctx.strokeStyle = "rgba(26, 74, 138, 0.65)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, bh, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        // 꼬리(말풍선이 사각형 위에 있을 때만 위쪽에)
+        const tailToTop = by < y;
+        if (tailToTop) {
+          const tx = x + w / 2;
+          const tipX = Math.max(bx + 14, Math.min(bx + bw - 14, tx));
+          const tipY = by + bh;
+          const baseY = tipY;
+          const peakY = Math.min(y + 2, tipY + 10);
+          ctx.beginPath();
+          ctx.moveTo(tipX - 7, baseY);
+          ctx.lineTo(tipX + 7, baseY);
+          ctx.lineTo(tipX, peakY);
+          ctx.closePath();
+          ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(26, 74, 138, 0.65)";
+          ctx.stroke();
+        }
+
+        // 텍스트
+        ctx.fillStyle = "#10233b";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, bx + bw / 2, by + bh / 2 + 0.5);
+        ctx.restore();
+      }
+
+      // 미리보기(남은 타일 확인): 타일 색을 바꾸지 않고 테두리/반투명 박스로만 표시
+      if (previewMode && previewRect) {
+        const rmin = Math.min(previewRect.r0, previewRect.r1);
+        const rmax = Math.max(previewRect.r0, previewRect.r1);
+        const cmin = Math.min(previewRect.c0, previewRect.c1);
+        const cmax = Math.max(previewRect.c0, previewRect.c1);
+        const x = PAD + cmin * CELL + 1;
+        const y = PAD + rmin * CELL + 1;
+        const w = (cmax - cmin + 1) * CELL - 2;
+        const h = (rmax - rmin + 1) * CELL - 2;
+        ctx.save();
+        ctx.fillStyle = "rgba(255, 190, 11, 0.20)";
+        ctx.strokeStyle = "rgba(255, 119, 0, 0.95)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 10);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function endGame(reason) {
+      if (!gameRunning) return;
+      gameRunning = false;
+      dragging = false;
+      anchor = null;
+      dragCorner = null;
+      path = [];
+      clearInterval(timerId);
+      timerId = null;
+      endedBy = reason;
+      previewMode = false;
+      previewMoves = [];
+      previewIndex = 0;
+      previewRect = null;
+      canvas.classList.add("ended");
+      if (reason === "nomoves") {
+        overlayTitleEl.textContent = "게임 종료";
+        finalScoreEl.textContent = "더이상 타일을 찾을 수 없어 게임을 종료합니다!\n\n최종 점수: " + score + "점 (없앤 사과 " + score + "개)";
+        remainBtn.style.display = "none";
+      } else {
+        overlayTitleEl.textContent = "시간 종료";
+        finalScoreEl.textContent = "최종 점수: " + score + "점 (없앤 사과 " + score + "개)";
+        remainBtn.style.display = anyMoveExists() ? "inline-block" : "none";
+      }
+      overlay.classList.add("show");
+      overlay.setAttribute("aria-hidden", "false");
+      draw();
+    }
+
+    function buildFullGrid() {
+      grid = Array.from({ length: ROWS }, () =>
+        Array.from({ length: COLS }, () => rand1to9())
+      );
+    }
+
+    function startNewGame() {
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
+      canvas.classList.remove("ended");
+      clearInterval(timerId);
+      timerId = null;
+
+      buildFullGrid();
+      score = 0;
+      timeLeft = GAME_SECONDS;
+      path = [];
+      anchor = null;
+      dragCorner = null;
+      dragging = false;
+      gameRunning = true;
+      previewMode = false;
+      previewMoves = [];
+      previewIndex = 0;
+      previewRect = null;
+      spoken30 = false;
+      lastCountdownSpoken = null;
+
+      timerId = setInterval(() => {
+        if (!gameRunning) return;
+        timeLeft--;
+        if (timeLeft === 30 && !spoken30) {
+          spoken30 = true;
+          speak("30초 남았습니다");
+        }
+        if (timeLeft <= 10 && timeLeft >= 1) {
+          if (lastCountdownSpoken !== timeLeft) {
+            lastCountdownSpoken = timeLeft;
+            speak(String(timeLeft));
+          }
+        }
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          endGame("time");
+        }
+        draw();
+      }, 1000);
+
+      draw();
+      if (!anyMoveExists()) endGame("nomoves");
+    }
+
+    function onPointerDown(e) {
+      if (!gameRunning) {
+        if (previewMode && previewMoves.length) {
+          previewIndex = (previewIndex + 1) % previewMoves.length;
+          const m = previewMoves[previewIndex];
+          previewRect = m;
+          path = []; // 타일 색(선택) 변경 방지 — 숫자는 그대로 보이게
+          draw();
+        }
+        return;
+      }
+      const cell = hitCell(e.clientX, e.clientY);
+      if (!cell) return;
+      const [r, c] = cell;
+      dragging = true;
+      anchor = [r, c];
+      dragCorner = [r, c];
+      path = cellsInRect(r, c, r, c);
+      draw();
+    }
+
+    function onPointerMove(e) {
+      if (!gameRunning || !dragging || !anchor) return;
+      const cell = hitCell(e.clientX, e.clientY);
+      if (!cell) return;
+      const [r, c] = cell;
+      dragCorner = [r, c];
+      path = cellsInRect(anchor[0], anchor[1], r, c);
+      draw();
+    }
+
+    function onPointerUp(e) {
+      if (!dragging) return;
+      dragging = false;
+      if (!gameRunning) {
+        anchor = null;
+        dragCorner = null;
+        path = [];
+        draw();
+        return;
+      }
+
+      if (anchor) {
+        const end = e && typeof e.clientX === "number" ? hitCell(e.clientX, e.clientY) : null;
+        if (end) dragCorner = end;
+        const [r0, c0] = anchor;
+        const [r1, c1] = dragCorner || anchor;
+        const eff = cellsInRect(r0, c0, r1, c1);
+
+        let total = 0;
+        for (const [r, c] of eff) total += grid[r][c] || 0;
+
+        if (eff.length >= 2 && total === 10) {
+          let clearedNums = 0;
+          const clearedCells = [];
+          for (const [r, c] of eff) {
+            if (grid[r][c] != null) {
+              clearedNums++;
+              clearedCells.push([r, c]);
+            }
+            grid[r][c] = null;
+          }
+          score += clearedNums;
+          if (clearedCells.length > 0) addClearPopEffects(clearedCells);
+          if (clearedNums > 0) playClearSound(clearedNums);
+          if (!anyMoveExists()) {
+            anchor = null;
+            dragCorner = null;
+            path = [];
+            draw();
+            endGame("nomoves");
+            return;
+          }
+        }
+      }
+
+      anchor = null;
+      dragCorner = null;
+      path = [];
+      draw();
+    }
+
+    resizeCanvas();
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointerleave", (ev) => {
+      if (dragging) onPointerUp(ev);
+    });
+
+    restartBtn.addEventListener("click", () => startNewGame());
+    remainBtn.addEventListener("click", () => {
+      if (endedBy !== "time") return;
+      previewMoves = collectMoves(200);
+      previewIndex = 0;
+      previewMode = previewMoves.length > 0;
+      if (previewMode) {
+        const m = previewMoves[previewIndex];
+        previewRect = m;
+        path = [];
+      } else {
+        previewRect = null;
+        path = [];
+      }
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
+      canvas.classList.remove("ended"); // 미리보기 중 클릭/확인 가능
+      draw();
+    });
+
+    window.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && previewMode && endedBy === "time") {
+        previewMode = false;
+        previewMoves = [];
+        previewIndex = 0;
+        previewRect = null;
+        path = [];
+        overlay.classList.add("show");
+        overlay.setAttribute("aria-hidden", "false");
+        canvas.classList.add("ended");
+        draw();
+      }
+    });
+
+    function applySettings() {
+      const n = Math.max(5, Math.min(30, Math.floor(Number(sizeInput.value || ROWS))));
+      const t = Math.max(10, Math.min(999, Math.floor(Number(timerInput.value || 120))));
+      ROWS = n;
+      COLS = n * 2;
+      GAME_SECONDS = t;
+      sizeInput.value = String(n);
+      timerInput.value = String(t);
+      hintEl.innerHTML = `${n}×${n * 2} 판, 제한 시간 ${t}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
+      resizeCanvas();
+      startNewGame();
+    }
+
+    applyBtn.addEventListener("click", applySettings);
+
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, rad) {
+        const rr = Math.min(rad, w / 2, h / 2);
+        this.moveTo(x + rr, y);
+        this.arcTo(x + w, y, x + w, y + h, rr);
+        this.arcTo(x + w, y + h, x, y + h, rr);
+        this.arcTo(x, y + h, x, y, rr);
+        this.arcTo(x, y, x + w, y, rr);
+        this.closePath();
+      };
+    }
+
+    // 현재 기기에 맞춘 기본값을 설정창에도 동기화
+    sizeInput.value = String(ROWS);
+    hintEl.innerHTML = `${ROWS}×${COLS} 판, 제한 시간 ${GAME_SECONDS}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js").catch(() => {
+          // no-op: offline cache unavailable
+        });
+      });
+    }
+
+    startNewGame();
+  </script>
+</body>
+</html>
