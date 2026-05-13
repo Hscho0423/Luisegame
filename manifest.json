@@ -1,6 +1,6 @@
 {
-  "name": "루이 게임",
-  "short_name": "루이 게임",
+  "name": "루이 사과 게임",
+  "short_name": "루이 사과 게임",
   "description": "합이 10이 되는 직사각형 타일을 지우는 퍼즐 게임",
   "lang": "ko-KR",
   "start_url": "./apple_game.html",

@@ -12,11 +12,11 @@
   <meta name="theme-color" content="#bcdcff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="루이 게임" />
+  <meta name="apple-mobile-web-app-title" content="루이 사과 게임" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icon.png" type="image/png" />
   <link rel="apple-touch-icon" href="./icon.png" />
-  <title>루이 게임 — 합이 10</title>
+  <title>루이 사과 게임 — 합이 10</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -78,14 +78,6 @@
     }
     canvas.ended { pointer-events: none; cursor: default; opacity: 0.85; }
     canvas.view-finished { pointer-events: none; cursor: default; }
-    .hint {
-      font-size: 0.8rem;
-      opacity: 0.75;
-      margin: 0;
-      max-width: 480px;
-      text-align: center;
-      line-height: 1.45;
-    }
     #settings {
       width: min(980px, 96vw);
       font-size: clamp(0.68rem, 2.4vw, 0.88rem);
@@ -265,6 +257,7 @@
     #final-score {
       margin: 0 0 20px;
       font-size: 1.05rem;
+      white-space: pre-line;
     }
     #restart-btn {
       font: inherit;
@@ -319,7 +312,7 @@
   <div id="layout">
     <div id="main">
       <header class="title-row">
-        <h1>루이 게임</h1>
+        <h1>루이 사과 게임</h1>
         <time class="last-modified" id="last-modified" datetime=""></time>
       </header>
       <aside id="settings">
@@ -351,9 +344,6 @@
       </aside>
       <p id="status"></p>
       <canvas id="board"></canvas>
-      <p class="hint" id="hint">
-        17×17 판, 제한 시간 120초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.
-      </p>
     </div>
   </div>
 
@@ -425,7 +415,6 @@ function onViewportResize() {
     const restartBtn = document.getElementById("restart-btn");
     const remainBtn = document.getElementById("remain-btn");
     const overlayCloseBtn = document.getElementById("overlay-close-btn");
-    const hintEl = document.getElementById("hint");
     const rowsSelect = document.getElementById("rows-select");
     const timerSelect = document.getElementById("timer-select");
     const ROWS_MIN = 4;
@@ -806,6 +795,16 @@ function onViewportResize() {
       return false;
     }
 
+    /** 숫자 사과가 남아 있지 않은 상태(모두 제거) */
+    function gridIsFullyCleared() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (grid[r][c] != null) return false;
+        }
+      }
+      return true;
+    }
+
     function collectMoves(limit = 200) {
       const ps = buildPrefixSum();
       const moves = [];
@@ -1010,12 +1009,18 @@ function onViewportResize() {
       previewRect = null;
       canvas.classList.add("ended");
       if (reason === "nomoves") {
-        overlayTitleEl.textContent = "게임 종료";
-        finalScoreEl.textContent = "더이상 타일을 찾을 수 없어 게임을 종료합니다!\n\n최종 점수: " + score + "점 (없앤 사과 " + score + "개)";
         remainBtn.style.display = "none";
+        if (gridIsFullyCleared()) {
+          overlayTitleEl.textContent = "축하합니다! 모두 찾았습니다!";
+          finalScoreEl.textContent = "최종 점수: " + score + "점";
+        } else {
+          overlayTitleEl.textContent = "게임 종료";
+          finalScoreEl.textContent =
+            "더이상 합이 10이 되는 타일을 찾을 수 없습니다.\n\n최종 점수: " + score + "점";
+        }
       } else {
         overlayTitleEl.textContent = "시간 종료";
-        finalScoreEl.textContent = "최종 점수: " + score + "점 (없앤 사과 " + score + "개)";
+        finalScoreEl.textContent = "최종 점수: " + score + "점";
         remainBtn.style.display = anyMoveExists() ? "inline-block" : "none";
       }
       overlay.classList.add("show");
@@ -1240,7 +1245,6 @@ canvas.addEventListener("pointerdown", onPointerDown);
       GAME_SECONDS = t;
       rowsSelect.value = String(n);
       timerSelect.value = String(t);
-      hintEl.innerHTML = `${n}×${n * 2} 판, 제한 시간 ${t}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
       persistUserSettings(n, t);
       resizeCanvas();
       startNewGame();
@@ -1269,7 +1273,6 @@ canvas.addEventListener("pointerdown", onPointerDown);
     );
     rowsSelect.value = String(ROWS);
     timerSelect.value = String(GAME_SECONDS);
-    hintEl.innerHTML = `${ROWS}×${COLS} 판, 제한 시간 ${GAME_SECONDS}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
     refreshHighScoreDisplay();
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") refreshHighScoreDisplay();
