@@ -3,26 +3,27 @@
 <head>
   <meta charset="UTF-8" />
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#bcdcff" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#bcdcff" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="루이 사과 게임" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icon.png" type="image/png" />
   <link rel="apple-touch-icon" href="./icon.png" />
   <title>루이 사과 게임 — 합이 10</title>
   <style>
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
     * { box-sizing: border-box; }
     body {
   overscroll-behavior: none;
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
       margin: 0;
       min-height: 100dvh;
   min-height: -webkit-fill-available;
@@ -32,6 +33,15 @@
       background: #bcdcff;
       font-family: "Segoe UI", system-ui, sans-serif;
       color: #1a1a1a;
+    }
+    #layout,
+    #main,
+    #settings,
+    .title-row,
+    #status,
+    #overlay {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
     #layout {
   padding-left: max(10px, env(safe-area-inset-left));
@@ -68,16 +78,24 @@
       white-space: nowrap;
     }
     #status { font-size: 0.95rem; margin: 0; opacity: 0.95; text-align: center; }
-    canvas {
+    #board-wrap {
+      touch-action: none;
+      max-width: min(96vw, 520px);
+      border-radius: 8px;
+      transform-origin: center center;
+      will-change: transform;
+    }
+    #board {
       display: block;
       cursor: crosshair;
       border-radius: 8px;
       touch-action: none;
-      max-width: min(96vw, 520px);
+      width: 100%;
       height: auto;
+      vertical-align: top;
     }
-    canvas.ended { pointer-events: none; cursor: default; opacity: 0.85; }
-    canvas.view-finished { pointer-events: none; cursor: default; }
+    #board.ended { pointer-events: none; cursor: default; opacity: 0.85; }
+    #board.view-finished { pointer-events: none; cursor: default; }
     #settings {
       width: min(980px, 96vw);
       font-size: clamp(0.68rem, 2.4vw, 0.88rem);
@@ -180,7 +198,7 @@
       #settings {
         width: min(96vw, 520px);
       }
-      canvas {
+      #board-wrap {
         max-width: 96vw;
       }
     }
@@ -343,7 +361,9 @@
         </div>
       </aside>
       <p id="status"></p>
-      <canvas id="board"></canvas>
+      <div id="board-wrap" aria-label="게임 보드 (두 손가락으로 확대·축소)">
+        <canvas id="board"></canvas>
+      </div>
     </div>
   </div>
 
@@ -407,6 +427,7 @@ function onViewportResize() {
 
 
     const canvas = document.getElementById("board");
+    const boardWrap = document.getElementById("board-wrap");
     const ctx = canvas.getContext("2d");
     const statusEl = document.getElementById("status");
     const overlay = document.getElementById("overlay");
@@ -629,6 +650,87 @@ function onViewportResize() {
     let previewRect = null; // {r0,c0,r1,c1} | null
     let dragStartPos = null; // {x,y} | null
     let dragNowPos = null;   // {x,y} | null
+
+    let boardPinchScale = 1;
+    let pinchBaseDist = 0;
+    let pinchBaseScale = 1;
+    const boardPointers = new Map();
+
+    function boardPointerDistance() {
+      if (boardPointers.size < 2) return 0;
+      const [a, b] = [...boardPointers.values()];
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function abortBoardDragForPinch() {
+      dragging = false;
+      anchor = null;
+      dragCorner = null;
+      dragStartPos = null;
+      dragNowPos = null;
+      path = [];
+    }
+
+    function applyBoardPinchTransform() {
+      if (!boardWrap) return;
+      boardWrap.style.transform = boardPinchScale !== 1 ? "scale(" + boardPinchScale + ")" : "";
+    }
+
+    function onBoardWrapPointerDownCapture(e) {
+      if (!boardWrap) return;
+      boardPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (boardPointers.size >= 2) {
+        abortBoardDragForPinch();
+        const d = boardPointerDistance();
+        if (d > 6) {
+          pinchBaseDist = d;
+          pinchBaseScale = boardPinchScale;
+        }
+      }
+    }
+
+    function onBoardWrapPointerMoveCapture(e) {
+      if (!boardWrap || !boardPointers.has(e.pointerId)) return;
+      boardPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (boardPointers.size >= 2 && pinchBaseDist > 6) {
+        const d = boardPointerDistance();
+        const next = pinchBaseScale * (d / pinchBaseDist);
+        boardPinchScale = Math.min(3.2, Math.max(0.35, next));
+        applyBoardPinchTransform();
+        e.preventDefault();
+      }
+    }
+
+    function onBoardWrapPointerEndCapture(e) {
+      boardPointers.delete(e.pointerId);
+      if (boardPointers.size < 2) pinchBaseDist = 0;
+      else {
+        const d = boardPointerDistance();
+        if (d > 6) {
+          pinchBaseDist = d;
+          pinchBaseScale = boardPinchScale;
+        }
+      }
+    }
+
+    if (boardWrap) {
+      boardWrap.addEventListener("pointerdown", onBoardWrapPointerDownCapture, true);
+      boardWrap.addEventListener("pointermove", onBoardWrapPointerMoveCapture, { capture: true, passive: false });
+      boardWrap.addEventListener("pointerup", onBoardWrapPointerEndCapture, true);
+      boardWrap.addEventListener("pointercancel", onBoardWrapPointerEndCapture, true);
+      boardWrap.addEventListener(
+        "wheel",
+        (e) => {
+          if (!e.ctrlKey) return;
+          e.preventDefault();
+          const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+          boardPinchScale = Math.min(3.2, Math.max(0.35, boardPinchScale * factor));
+          applyBoardPinchTransform();
+        },
+        { passive: false }
+      );
+    }
+
     const CLEAR_POP_MS = 500;
     const CLEAR_POP_SRC = "./clear-pop.png";
     const clearPopImage = new Image();
@@ -1046,6 +1148,8 @@ function onViewportResize() {
       buildFullGrid();
       score = 0;
       timeLeft = GAME_SECONDS;
+      boardPinchScale = 1;
+      applyBoardPinchTransform();
       path = [];
       anchor = null;
       dragCorner = null;
@@ -1083,6 +1187,7 @@ function onViewportResize() {
     }
 
     function onPointerDown(e) {
+      if (boardPointers.size >= 2) return;
       if (!gameRunning) {
         if (previewMode && previewMoves.length) {
           previewIndex = (previewIndex + 1) % previewMoves.length;
@@ -1107,6 +1212,7 @@ function onViewportResize() {
     }
 
     function onPointerMove(e) {
+      if (boardPointers.size >= 2) return;
       if (!gameRunning || !dragging || !anchor) return;
       const cell = hitCell(e.clientX, e.clientY);
       if (!cell) return;
