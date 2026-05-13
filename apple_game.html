@@ -2,6 +2,12 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#bcdcff" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#bcdcff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,8 +20,12 @@
   <style>
     * { box-sizing: border-box; }
     body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
       margin: 0;
-      min-height: 100vh;
+      min-height: 100dvh;
+  min-height: -webkit-fill-available;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -24,6 +34,9 @@
       color: #1a1a1a;
     }
     #layout {
+  padding-left: max(10px, env(safe-area-inset-left));
+  padding-right: max(10px, env(safe-area-inset-right));
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
       width: min(1100px, 98vw);
       display: flex;
       align-items: flex-start;
@@ -58,7 +71,7 @@
     }
     #settings {
       width: min(980px, 96vw);
-      font-size: 0.5rem;
+      font-size: clamp(0.72rem, 2.8vw, 0.95rem);
       background: rgba(255, 255, 255, 0.72);
       border: 1px solid rgba(0, 0, 0, 0.10);
       border-radius: 10px;
@@ -73,7 +86,7 @@
     }
     #settings h2 {
       margin: 0;
-      font-size: 0.5rem;
+      font-size: clamp(0.72rem, 2.6vw, 0.9rem);
       white-space: nowrap;
     }
     .field {
@@ -83,8 +96,10 @@
       padding: 0;
       border-bottom: none;
     }
-    .field label { font-size: 0.5rem; opacity: 0.9; }
+    .field label { font-size: clamp(0.72rem, 2.6vw, 0.9rem); opacity: 0.9; }
     .field input {
+  min-height: 44px;
+  box-sizing: border-box;
       width: 68px;
       font: inherit;
       padding: 2px 5px;
@@ -93,6 +108,8 @@
       background: rgba(255, 255, 255, 0.9);
     }
     #apply-btn {
+  min-height: 44px;
+  min-width: 44px;
       width: auto;
       margin-top: 0;
       font: inherit;
@@ -161,6 +178,25 @@
     }
     #restart-btn:hover { filter: brightness(1.05); }
     #restart-btn:active { transform: scale(0.98); }
+
+#remain-btn {
+  margin-top: 10px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background: #e8f4ff;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+#remain-btn:hover { filter: brightness(1.02); }
+@media (max-width: 520px) {
+  #overlay-box { width: min(360px, calc(100vw - 28px)); padding: 22px 18px; }
+  #restart-btn, #remain-btn { width: 100%; margin-left: 0; }
+}
+
   </style>
 </head>
 <body>
@@ -209,9 +245,38 @@
 
     let ROWS = getRecommendedRows();
     let COLS = ROWS * 2;
-    const CELL = 28;
+    let CELL = 28;
     const PAD = 14;
     let GAME_SECONDS = 120;
+
+function getFontPx() {
+  return Math.max(11, Math.round(CELL * 0.56));
+}
+
+function refreshCellSize() {
+  const vv = window.visualViewport;
+  const iw = Math.min(
+    vv && vv.width ? vv.width : 1e9,
+    window.innerWidth || 1024,
+    document.documentElement.clientWidth || 1024
+  );
+  const ih = Math.min(
+    vv && vv.height ? vv.height : 1e9,
+    window.innerHeight || 800
+  );
+  const maxBoardCssW = Math.min(520, iw * 0.96) - 8;
+  const cellFromW = Math.floor((maxBoardCssW - PAD * 2) / COLS);
+  const reserved = Math.min(260, Math.max(180, ih * 0.38));
+  const maxBoardCssH = Math.max(140, ih - reserved);
+  const cellFromH = Math.floor((maxBoardCssH - PAD * 2) / ROWS);
+  CELL = Math.max(22, Math.min(40, Math.min(cellFromW, cellFromH)));
+}
+
+function onViewportResize() {
+  resizeCanvas();
+  draw();
+}
+
 
     const canvas = document.getElementById("board");
     const ctx = canvas.getContext("2d");
@@ -226,7 +291,7 @@
     const timerInput = document.getElementById("timer-input");
     const applyBtn = document.getElementById("apply-btn");
 
-    const fontPx = Math.max(11, Math.round(CELL * 0.56));
+    
 
     /** 축 정렬 사과 실루엣 (중심 cx,cy · 반지름 R) */
     function buildAppleBodyPath(cx, cy, R) {
@@ -310,7 +375,8 @@
     }
 
     function resizeCanvas() {
-      canvas.width = COLS * CELL + PAD * 2;
+  refreshCellSize();
+  canvas.width = COLS * CELL + PAD * 2;
       canvas.height = ROWS * CELL + PAD * 2;
     }
 
@@ -601,7 +667,7 @@
           }
           const sel = isHighlighted(r, c);
           drawAppleTile(cx, cy, R, { empty: false, selected: sel });
-          ctx.font = "600 " + fontPx + "px Segoe UI, system-ui, sans-serif";
+          ctx.font = "600 " + getFontPx() + "px Segoe UI, system-ui, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = "#fffdf7";
@@ -938,7 +1004,11 @@
     }
 
     resizeCanvas();
-    canvas.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("resize", onViewportResize);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", onViewportResize);
+}
+canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("pointerleave", (ev) => {
