@@ -173,6 +173,55 @@
         max-width: 96vw;
       }
     }
+
+    /* 휴대폰 가로·뷰포트 높이가 낮을 때: 사용자 설정을 한 줄로 */
+    @media (orientation: landscape) and (max-height: 560px) {
+      #settings {
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-start;
+        width: min(100%, 96vw);
+        max-width: none;
+        gap: 5px;
+        padding: 2px 6px;
+        font-size: clamp(0.58rem, 2.2vmin, 0.78rem);
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+      #settings h2 {
+        font-size: clamp(0.58rem, 2vmin, 0.76rem);
+        flex: 0 0 auto;
+      }
+      .field {
+        flex: 0 0 auto;
+        gap: 2px;
+      }
+      .field label {
+        font-size: clamp(0.58rem, 2vmin, 0.76rem);
+      }
+      .field input {
+        min-height: 34px;
+        width: 50px;
+        padding: 1px 3px;
+      }
+      #apply-btn {
+        min-height: 34px;
+        min-width: 34px;
+        padding: 2px 6px;
+        flex-shrink: 0;
+      }
+      .settings-apply-row {
+        flex-wrap: nowrap;
+        gap: 5px;
+        flex: 0 0 auto;
+      }
+      .high-scores {
+        font-size: clamp(0.54rem, 2vmin, 0.72rem);
+        white-space: nowrap;
+      }
+    }
     #overlay {
       display: none;
       position: fixed;
