@@ -87,56 +87,74 @@
     }
     #settings {
       width: min(980px, 96vw);
-      font-size: clamp(0.72rem, 2.8vw, 0.95rem);
+      font-size: clamp(0.68rem, 2.4vw, 0.88rem);
+      line-height: 1.25;
       background: rgba(255, 255, 255, 0.72);
       border: 1px solid rgba(0, 0, 0, 0.10);
-      border-radius: 10px;
-      padding: 4px 8px;
+      border-radius: 8px;
+      padding: 2px 6px;
       margin: 0 0 6px;
       backdrop-filter: blur(6px);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
       flex-wrap: wrap;
     }
     #settings h2 {
       margin: 0;
-      font-size: clamp(0.72rem, 2.6vw, 0.9rem);
+      font-size: 1em;
+      font-weight: 600;
       white-space: nowrap;
     }
     .field {
       display: flex;
-      gap: 4px;
+      gap: 3px;
       align-items: center;
       padding: 0;
       border-bottom: none;
     }
-    .field label { font-size: clamp(0.72rem, 2.6vw, 0.9rem); opacity: 0.9; }
-    .field input {
-  min-height: 44px;
-  box-sizing: border-box;
-  min-height: 44px;
-  box-sizing: border-box;
-      width: 68px;
+    .field label {
+      font-size: 1em;
+      opacity: 0.9;
+    }
+    #settings .field select {
+      box-sizing: border-box;
+      margin: 0;
+      height: auto;
+      min-height: 0;
+      line-height: 1.3;
+      padding: 0 1.4em 0 4px;
       font: inherit;
-      padding: 2px 5px;
-      border-radius: 6px;
+      font-size: 1em;
+      border-radius: 5px;
       border: 1px solid rgba(0, 0, 0, 0.18);
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.95);
+      color: inherit;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+    #rows-select {
+      min-width: 2.75em;
+      max-width: 5rem;
+    }
+    #timer-select {
+      min-width: 4.25em;
+      max-width: 6.5rem;
     }
     #apply-btn {
-  min-height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  min-width: 44px;
+      box-sizing: border-box;
       width: auto;
-      margin-top: 0;
+      margin: 0;
+      min-height: 0;
+      min-width: 0;
       font: inherit;
+      font-size: 1em;
       font-weight: 700;
-      padding: 3px 8px;
+      line-height: 1.3;
+      padding: 0 7px;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       background: #1a4a8a;
       color: white;
       cursor: pointer;
@@ -152,9 +170,9 @@
     }
     .high-scores {
       margin: 0;
-      font-size: clamp(0.68rem, 2.5vw, 0.85rem);
+      font-size: 0.9em;
       opacity: 0.9;
-      line-height: 1.35;
+      line-height: 1.25;
       text-align: left;
       white-space: nowrap;
     }
@@ -201,15 +219,12 @@
       .field label {
         font-size: clamp(0.58rem, 2vmin, 0.76rem);
       }
-      .field input {
-        min-height: 34px;
-        width: 50px;
-        padding: 1px 3px;
+      #settings .field select {
+        padding: 0 1.25em 0 3px;
+        max-width: none;
       }
       #apply-btn {
-        min-height: 34px;
-        min-width: 34px;
-        padding: 2px 6px;
+        padding: 0 6px;
         flex-shrink: 0;
       }
       .settings-apply-row {
@@ -309,12 +324,22 @@
       <aside id="settings">
         <h2>사용자 설정</h2>
         <div class="field">
-          <label for="size-input">세로 타일</label>
-          <input id="size-input" type="number" min="5" max="30" step="1" value="8" />
+          <label for="rows-select">세로 타일</label>
+          <select id="rows-select" aria-label="세로 타일 수">
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8" selected>8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+          </select>
         </div>
         <div class="field">
-          <label for="timer-input">타이머(초)</label>
-          <input id="timer-input" type="number" min="10" max="999" step="1" value="120" />
+          <label for="timer-select">타이머</label>
+          <select id="timer-select" aria-label="제한 시간(초)"></select>
         </div>
         <div class="settings-apply-row">
           <button type="button" id="apply-btn">적용</button>
@@ -400,8 +425,19 @@ function onViewportResize() {
     const remainBtn = document.getElementById("remain-btn");
     const overlayCloseBtn = document.getElementById("overlay-close-btn");
     const hintEl = document.getElementById("hint");
-    const sizeInput = document.getElementById("size-input");
-    const timerInput = document.getElementById("timer-input");
+    const rowsSelect = document.getElementById("rows-select");
+    const timerSelect = document.getElementById("timer-select");
+    const ROWS_MIN = 4;
+    const ROWS_MAX = 12;
+    const TIMER_MIN = 10;
+    const TIMER_MAX = 300;
+    const TIMER_STEP = 10;
+    for (let s = TIMER_MIN; s <= TIMER_MAX; s += TIMER_STEP) {
+      const opt = document.createElement("option");
+      opt.value = String(s);
+      opt.textContent = s + "초";
+      timerSelect.appendChild(opt);
+    }
     const applyBtn = document.getElementById("apply-btn");
     const highDayEl = document.getElementById("high-day");
     const highAllEl = document.getElementById("high-all");
@@ -1158,13 +1194,18 @@ canvas.addEventListener("pointerdown", onPointerDown);
     });
 
     function applySettings() {
-      const n = Math.max(5, Math.min(30, Math.floor(Number(sizeInput.value || ROWS))));
-      const t = Math.max(10, Math.min(999, Math.floor(Number(timerInput.value || 120))));
+      let n = Math.floor(Number(rowsSelect.value));
+      if (!Number.isFinite(n)) n = ROWS;
+      n = Math.max(ROWS_MIN, Math.min(ROWS_MAX, n));
+      let t = Math.floor(Number(timerSelect.value));
+      if (!Number.isFinite(t)) t = GAME_SECONDS;
+      t = Math.max(TIMER_MIN, Math.min(TIMER_MAX, t));
+      t = Math.round(t / TIMER_STEP) * TIMER_STEP;
       ROWS = n;
       COLS = n * 2;
       GAME_SECONDS = t;
-      sizeInput.value = String(n);
-      timerInput.value = String(t);
+      rowsSelect.value = String(n);
+      timerSelect.value = String(t);
       hintEl.innerHTML = `${n}×${n * 2} 판, 제한 시간 ${t}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
       resizeCanvas();
       startNewGame();
@@ -1185,7 +1226,14 @@ canvas.addEventListener("pointerdown", onPointerDown);
     }
 
     // 현재 기기에 맞춘 기본값을 설정창에도 동기화
-    sizeInput.value = String(ROWS);
+    ROWS = Math.max(ROWS_MIN, Math.min(ROWS_MAX, ROWS));
+    COLS = ROWS * 2;
+    GAME_SECONDS = Math.max(
+      TIMER_MIN,
+      Math.min(TIMER_MAX, Math.round(GAME_SECONDS / TIMER_STEP) * TIMER_STEP)
+    );
+    rowsSelect.value = String(ROWS);
+    timerSelect.value = String(GAME_SECONDS);
     hintEl.innerHTML = `${ROWS}×${COLS} 판, 제한 시간 ${GAME_SECONDS}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
     refreshHighScoreDisplay();
     document.addEventListener("visibilitychange", () => {
