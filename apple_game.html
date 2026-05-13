@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -21,7 +21,7 @@
     * { box-sizing: border-box; }
     body {
   overscroll-behavior: none;
-  touch-action: manipulation;
+  touch-action: auto;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
       margin: 0;
@@ -57,14 +57,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
       flex-shrink: 0;
       gap: 3px;
-      --hud-inv: 1;
-      max-height: 100dvh;
-      max-height: 100svh;
-      overflow: hidden;
-      width: 100%;
     }
     .title-row {
       display: flex;
@@ -73,50 +68,26 @@
       justify-content: center;
       gap: 0.35em 0.5em;
       margin: 0;
-      flex-shrink: 0;
     }
-    .title-row h1 {
-      font-size: calc(1.1rem * var(--hud-inv, 1));
-      font-weight: 600;
-      margin: 0;
-    }
+    .title-row h1 { font-size: 1.1rem; font-weight: 600; margin: 0; }
     .title-row .last-modified {
-      font-size: max(8px, calc(1.1rem * 0.4 * var(--hud-inv, 1)));
+      font-size: max(9px, calc(1.1rem * 0.4));
       font-weight: 500;
       line-height: 1.2;
       color: rgba(26, 26, 26, 0.62);
       white-space: nowrap;
     }
-    #status {
-      font-size: calc(0.95rem * var(--hud-inv, 1));
-      margin: 0;
-      opacity: 0.95;
-      text-align: center;
-    }
-    #board-wrap {
-      touch-action: none;
-      max-width: min(96vw, 520px);
-      border-radius: 8px;
-      transform-origin: center top;
-      will-change: transform;
-      flex: 1 1 auto;
-      min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-    #board {
+    #status { font-size: 0.95rem; margin: 0; opacity: 0.95; text-align: center; }
+    canvas#board {
       display: block;
       cursor: crosshair;
       border-radius: 8px;
       touch-action: none;
-      width: 100%;
+      max-width: min(96vw, 520px);
       height: auto;
-      vertical-align: top;
     }
-    #board.ended { pointer-events: none; cursor: default; opacity: 0.85; }
-    #board.view-finished { pointer-events: none; cursor: default; }
+    canvas#board.ended { pointer-events: none; cursor: default; opacity: 0.85; }
+    canvas#board.view-finished { pointer-events: none; cursor: default; }
     #settings {
       width: min(980px, 96vw);
       font-size: clamp(0.68rem, 2.4vw, 0.88rem);
@@ -220,7 +191,7 @@
       #settings {
         width: min(96vw, 520px);
       }
-      #board-wrap {
+      canvas#board {
         max-width: 96vw;
       }
     }
@@ -383,9 +354,7 @@
         </div>
       </aside>
       <p id="status"></p>
-      <div id="board-wrap" aria-label="게임 보드 (두 손가락으로 확대·축소)">
-        <canvas id="board"></canvas>
-      </div>
+      <canvas id="board"></canvas>
     </div>
   </div>
 
@@ -445,14 +414,10 @@ function refreshCellSize() {
 function onViewportResize() {
   resizeCanvas();
   draw();
-  applyBoardPinchTransform();
 }
 
 
     const canvas = document.getElementById("board");
-    const boardWrap = document.getElementById("board-wrap");
-    const mainEl = document.getElementById("main");
-    const settingsEl = document.getElementById("settings");
     const ctx = canvas.getContext("2d");
     const statusEl = document.getElementById("status");
     const overlay = document.getElementById("overlay");
@@ -675,110 +640,6 @@ function onViewportResize() {
     let previewRect = null; // {r0,c0,r1,c1} | null
     let dragStartPos = null; // {x,y} | null
     let dragNowPos = null;   // {x,y} | null
-
-    let boardPinchScale = 1;
-    let pinchBaseDist = 0;
-    let pinchBaseScale = 1;
-    const boardPointers = new Map();
-
-    function boardPointerDistance() {
-      if (boardPointers.size < 2) return 0;
-      const [a, b] = [...boardPointers.values()];
-      return Math.hypot(a.x - b.x, a.y - b.y);
-    }
-
-    function abortBoardDragForPinch() {
-      dragging = false;
-      anchor = null;
-      dragCorner = null;
-      dragStartPos = null;
-      dragNowPos = null;
-      path = [];
-    }
-
-    function computeEffectiveBoardScale() {
-      if (!boardWrap || !mainEl) return Math.min(3.2, Math.max(0.35, boardPinchScale));
-      let s = Math.min(3.2, Math.max(0.35, boardPinchScale));
-      const vv = window.visualViewport;
-      const vh = vv && vv.height ? vv.height : window.innerHeight || 800;
-      const pad = 10;
-      for (let i = 0; i < 56; i++) {
-        boardWrap.style.transform = s !== 1 ? "scale(" + s + ")" : "";
-        const br = boardWrap.getBoundingClientRect();
-        if (br.bottom <= vh - pad && br.top >= -4) return s;
-        s *= 0.94;
-        if (s <= 0.31) return 0.31;
-      }
-      return Math.max(0.31, s);
-    }
-
-    function applyBoardPinchTransform() {
-      if (!mainEl) return;
-      const zoomed = boardPinchScale > 1.02;
-      if (settingsEl) settingsEl.style.display = zoomed ? "none" : "";
-      void mainEl.offsetHeight;
-      const inv = Math.max(0.24, Math.min(1, 1 / Math.pow(boardPinchScale, 0.94)));
-      mainEl.style.setProperty("--hud-inv", String(inv));
-      if (!boardWrap) return;
-      const eff = computeEffectiveBoardScale();
-      boardWrap.style.transform = eff !== 1 ? "scale(" + eff + ")" : "";
-    }
-
-    function onBoardWrapPointerDownCapture(e) {
-      if (!boardWrap) return;
-      boardPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (boardPointers.size >= 2) {
-        abortBoardDragForPinch();
-        const d = boardPointerDistance();
-        if (d > 6) {
-          pinchBaseDist = d;
-          pinchBaseScale = boardPinchScale;
-        }
-      }
-    }
-
-    function onBoardWrapPointerMoveCapture(e) {
-      if (!boardWrap || !boardPointers.has(e.pointerId)) return;
-      boardPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (boardPointers.size >= 2 && pinchBaseDist > 6) {
-        const d = boardPointerDistance();
-        const next = pinchBaseScale * (d / pinchBaseDist);
-        boardPinchScale = Math.min(3.2, Math.max(0.35, next));
-        applyBoardPinchTransform();
-        e.preventDefault();
-      }
-    }
-
-    function onBoardWrapPointerEndCapture(e) {
-      boardPointers.delete(e.pointerId);
-      if (boardPointers.size < 2) pinchBaseDist = 0;
-      else {
-        const d = boardPointerDistance();
-        if (d > 6) {
-          pinchBaseDist = d;
-          pinchBaseScale = boardPinchScale;
-        }
-      }
-      applyBoardPinchTransform();
-    }
-
-    if (boardWrap) {
-      boardWrap.addEventListener("pointerdown", onBoardWrapPointerDownCapture, true);
-      boardWrap.addEventListener("pointermove", onBoardWrapPointerMoveCapture, { capture: true, passive: false });
-      boardWrap.addEventListener("pointerup", onBoardWrapPointerEndCapture, true);
-      boardWrap.addEventListener("pointercancel", onBoardWrapPointerEndCapture, true);
-      boardWrap.addEventListener(
-        "wheel",
-        (e) => {
-          if (!e.ctrlKey) return;
-          e.preventDefault();
-          const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
-          boardPinchScale = Math.min(3.2, Math.max(0.35, boardPinchScale * factor));
-          applyBoardPinchTransform();
-        },
-        { passive: false }
-      );
-    }
 
     const CLEAR_POP_MS = 500;
     const CLEAR_POP_SRC = "./clear-pop.png";
@@ -1197,8 +1058,6 @@ function onViewportResize() {
       buildFullGrid();
       score = 0;
       timeLeft = GAME_SECONDS;
-      boardPinchScale = 1;
-      applyBoardPinchTransform();
       path = [];
       anchor = null;
       dragCorner = null;
@@ -1236,7 +1095,6 @@ function onViewportResize() {
     }
 
     function onPointerDown(e) {
-      if (boardPointers.size >= 2) return;
       if (!gameRunning) {
         if (previewMode && previewMoves.length) {
           previewIndex = (previewIndex + 1) % previewMoves.length;
@@ -1261,7 +1119,6 @@ function onViewportResize() {
     }
 
     function onPointerMove(e) {
-      if (boardPointers.size >= 2) return;
       if (!gameRunning || !dragging || !anchor) return;
       const cell = hitCell(e.clientX, e.clientY);
       if (!cell) return;
