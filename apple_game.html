@@ -57,9 +57,14 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       flex-shrink: 0;
       gap: 3px;
+      --hud-inv: 1;
+      max-height: 100dvh;
+      max-height: 100svh;
+      overflow: hidden;
+      width: 100%;
     }
     .title-row {
       display: flex;
@@ -68,22 +73,38 @@
       justify-content: center;
       gap: 0.35em 0.5em;
       margin: 0;
+      flex-shrink: 0;
     }
-    .title-row h1 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+    .title-row h1 {
+      font-size: calc(1.1rem * var(--hud-inv, 1));
+      font-weight: 600;
+      margin: 0;
+    }
     .title-row .last-modified {
-      font-size: max(9px, calc(1.1rem * 0.4));
+      font-size: max(8px, calc(1.1rem * 0.4 * var(--hud-inv, 1)));
       font-weight: 500;
       line-height: 1.2;
       color: rgba(26, 26, 26, 0.62);
       white-space: nowrap;
     }
-    #status { font-size: 0.95rem; margin: 0; opacity: 0.95; text-align: center; }
+    #status {
+      font-size: calc(0.95rem * var(--hud-inv, 1));
+      margin: 0;
+      opacity: 0.95;
+      text-align: center;
+    }
     #board-wrap {
       touch-action: none;
       max-width: min(96vw, 520px);
       border-radius: 8px;
-      transform-origin: center center;
+      transform-origin: center top;
       will-change: transform;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
     #board {
       display: block;
@@ -111,6 +132,7 @@
       justify-content: center;
       gap: 5px;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
     #settings h2 {
       margin: 0;
@@ -423,11 +445,14 @@ function refreshCellSize() {
 function onViewportResize() {
   resizeCanvas();
   draw();
+  applyBoardPinchTransform();
 }
 
 
     const canvas = document.getElementById("board");
     const boardWrap = document.getElementById("board-wrap");
+    const mainEl = document.getElementById("main");
+    const settingsEl = document.getElementById("settings");
     const ctx = canvas.getContext("2d");
     const statusEl = document.getElementById("status");
     const overlay = document.getElementById("overlay");
@@ -671,9 +696,32 @@ function onViewportResize() {
       path = [];
     }
 
+    function computeEffectiveBoardScale() {
+      if (!boardWrap || !mainEl) return Math.min(3.2, Math.max(0.35, boardPinchScale));
+      let s = Math.min(3.2, Math.max(0.35, boardPinchScale));
+      const vv = window.visualViewport;
+      const vh = vv && vv.height ? vv.height : window.innerHeight || 800;
+      const pad = 10;
+      for (let i = 0; i < 56; i++) {
+        boardWrap.style.transform = s !== 1 ? "scale(" + s + ")" : "";
+        const br = boardWrap.getBoundingClientRect();
+        if (br.bottom <= vh - pad && br.top >= -4) return s;
+        s *= 0.94;
+        if (s <= 0.31) return 0.31;
+      }
+      return Math.max(0.31, s);
+    }
+
     function applyBoardPinchTransform() {
+      if (!mainEl) return;
+      const zoomed = boardPinchScale > 1.02;
+      if (settingsEl) settingsEl.style.display = zoomed ? "none" : "";
+      void mainEl.offsetHeight;
+      const inv = Math.max(0.24, Math.min(1, 1 / Math.pow(boardPinchScale, 0.94)));
+      mainEl.style.setProperty("--hud-inv", String(inv));
       if (!boardWrap) return;
-      boardWrap.style.transform = boardPinchScale !== 1 ? "scale(" + boardPinchScale + ")" : "";
+      const eff = computeEffectiveBoardScale();
+      boardWrap.style.transform = eff !== 1 ? "scale(" + eff + ")" : "";
     }
 
     function onBoardWrapPointerDownCapture(e) {
@@ -711,6 +759,7 @@ function onViewportResize() {
           pinchBaseScale = boardPinchScale;
         }
       }
+      applyBoardPinchTransform();
     }
 
     if (boardWrap) {
