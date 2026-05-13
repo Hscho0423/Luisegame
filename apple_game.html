@@ -41,7 +41,7 @@
       display: flex;
       align-items: flex-start;
       justify-content: center;
-      padding: 18px 10px;
+      padding: 12px 10px;
     }
     #main {
       display: flex;
@@ -49,6 +49,7 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      gap: 3px;
     }
     .title-row {
       display: flex;
@@ -56,7 +57,7 @@
       align-items: baseline;
       justify-content: center;
       gap: 0.35em 0.5em;
-      margin: 0 0 8px;
+      margin: 0;
     }
     .title-row h1 { font-size: 1.1rem; font-weight: 600; margin: 0; }
     .title-row .last-modified {
@@ -66,7 +67,7 @@
       color: rgba(26, 26, 26, 0.62);
       white-space: nowrap;
     }
-    #status { font-size: 0.95rem; margin-bottom: 8px; opacity: 0.95; text-align: center; }
+    #status { font-size: 0.95rem; margin: 0; opacity: 0.95; text-align: center; }
     canvas {
       display: block;
       cursor: crosshair;
@@ -80,7 +81,7 @@
     .hint {
       font-size: 0.8rem;
       opacity: 0.75;
-      margin-top: 10px;
+      margin: 0;
       max-width: 480px;
       text-align: center;
       line-height: 1.45;
@@ -93,7 +94,7 @@
       border: 1px solid rgba(0, 0, 0, 0.10);
       border-radius: 8px;
       padding: 2px 6px;
-      margin: 0 0 6px;
+      margin: 0;
       backdrop-filter: blur(6px);
       display: flex;
       align-items: center;
@@ -432,11 +433,44 @@ function onViewportResize() {
     const TIMER_MIN = 10;
     const TIMER_MAX = 300;
     const TIMER_STEP = 10;
+    const USER_SETTINGS_KEY = "luisegame-apple-user-settings";
+
+    function loadPersistedUserSettings() {
+      try {
+        const raw = localStorage.getItem(USER_SETTINGS_KEY);
+        if (!raw) return null;
+        const o = JSON.parse(raw);
+        if (!o || typeof o !== "object") return null;
+        let rows = Math.floor(Number(o.rows));
+        let timer = Math.floor(Number(o.timer));
+        if (!Number.isFinite(rows) || !Number.isFinite(timer)) return null;
+        rows = Math.max(ROWS_MIN, Math.min(ROWS_MAX, rows));
+        timer = Math.max(TIMER_MIN, Math.min(TIMER_MAX, Math.round(timer / TIMER_STEP) * TIMER_STEP));
+        return { rows, timer };
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function persistUserSettings(rows, timer) {
+      try {
+        localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify({ rows, timer }));
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
     for (let s = TIMER_MIN; s <= TIMER_MAX; s += TIMER_STEP) {
       const opt = document.createElement("option");
       opt.value = String(s);
       opt.textContent = s + "초";
       timerSelect.appendChild(opt);
+    }
+    const persisted = loadPersistedUserSettings();
+    if (persisted) {
+      ROWS = persisted.rows;
+      COLS = ROWS * 2;
+      GAME_SECONDS = persisted.timer;
     }
     const applyBtn = document.getElementById("apply-btn");
     const highDayEl = document.getElementById("high-day");
@@ -1207,6 +1241,7 @@ canvas.addEventListener("pointerdown", onPointerDown);
       rowsSelect.value = String(n);
       timerSelect.value = String(t);
       hintEl.innerHTML = `${n}×${n * 2} 판, 제한 시간 ${t}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
+      persistUserSettings(n, t);
       resizeCanvas();
       startNewGame();
     }
