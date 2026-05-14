@@ -310,7 +310,57 @@
   color: #1a1a1a;
   cursor: pointer;
 }
-#overlay-close-btn:hover { filter: brightness(1.02); }
+    #overlay-close-btn:hover { filter: brightness(1.02); }
+
+    #pause-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 12;
+      align-items: center;
+      justify-content: center;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+        max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      background: rgba(160, 195, 235, 0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    #pause-overlay.show {
+      display: flex;
+    }
+    #resume-btn {
+      font: inherit;
+      font-size: clamp(1rem, 3.5vw, 1.15rem);
+      font-weight: 700;
+      padding: 14px 40px;
+      border: none;
+      border-radius: 12px;
+      background: #1a4a8a;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.24);
+    }
+    #resume-btn:hover { filter: brightness(1.06); }
+    #resume-btn:active { transform: scale(0.98); }
+
+    #pause-btn {
+      box-sizing: border-box;
+      font: inherit;
+      font-size: 1em;
+      font-weight: 600;
+      line-height: 1.3;
+      padding: 0 8px;
+      border: 1px solid rgba(26, 74, 138, 0.5);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.88);
+      color: #1a4a8a;
+      cursor: pointer;
+    }
+    #pause-btn:hover { background: #fff; }
+    #pause-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
 
 @media (max-width: 520px) {
   #overlay-box { width: min(360px, calc(100vw - 28px)); padding: 22px 18px; }
@@ -348,6 +398,7 @@
         </div>
         <div class="settings-apply-row">
           <button type="button" id="apply-btn">적용</button>
+          <button type="button" id="pause-btn">일시정지</button>
           <p id="high-scores" class="high-scores" aria-live="polite">
             <span>오늘 최고 <strong id="high-day">0</strong>점</span><span class="high-scores-sep">·</span><span>역대 최고 <strong id="high-all">0</strong>점</span>
           </p>
@@ -368,6 +419,10 @@
 <button type="button" id="overlay-close-btn">닫기</button>
       </div>
     </div>
+  </div>
+
+  <div id="pause-overlay" aria-hidden="true">
+    <button type="button" id="resume-btn">이어하기</button>
   </div>
 
   <script>
@@ -413,6 +468,7 @@ function refreshCellSize() {
 
 function onViewportResize() {
   resizeCanvas();
+  if (dragging) dragCanvasRect = canvas.getBoundingClientRect();
   draw();
 }
 
@@ -473,8 +529,40 @@ function onViewportResize() {
       GAME_SECONDS = persisted.timer;
     }
     const applyBtn = document.getElementById("apply-btn");
+    const pauseBtn = document.getElementById("pause-btn");
+    const pauseOverlay = document.getElementById("pause-overlay");
+    const resumeBtn = document.getElementById("resume-btn");
     const highDayEl = document.getElementById("high-day");
     const highAllEl = document.getElementById("high-all");
+
+    function hidePauseUI() {
+      paused = false;
+      if (pauseOverlay) {
+        pauseOverlay.classList.remove("show");
+        pauseOverlay.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    function showPauseUI() {
+      if (!gameRunning || paused) return;
+      paused = true;
+      dragging = false;
+      anchor = null;
+      dragCorner = null;
+      dragStartPos = null;
+      dragNowPos = null;
+      path = [];
+      dragCanvasRect = null;
+      if (pauseOverlay) {
+        pauseOverlay.classList.add("show");
+        pauseOverlay.setAttribute("aria-hidden", "false");
+      }
+      flushDraw();
+    }
+
+    function updatePauseButtonState() {
+      if (pauseBtn) pauseBtn.disabled = !gameRunning || paused;
+    }
 
     const HIGH_ALL_KEY = "luisegame-apple-high-all";
     const HIGH_DAY_KEY = "luisegame-apple-high-day";
@@ -633,6 +721,7 @@ function onViewportResize() {
     let timeLeft = GAME_SECONDS;
     let gameRunning = false;
     let timerId = null;
+    let paused = false;
     let endedBy = null; // "time" | "nomoves" | null
     let previewMode = false;
     let previewMoves = [];
@@ -855,12 +944,27 @@ function onViewportResize() {
       return path.some(([pr, pc]) => pr === r && pc === c);
     }
 
-    function isHighlighted(r, c) {
-      return pathHas(r, c);
+    let drawRafId = null;
+    let dragCanvasRect = null;
+
+    function scheduleDraw() {
+      if (drawRafId != null) return;
+      drawRafId = requestAnimationFrame(() => {
+        drawRafId = null;
+        draw();
+      });
     }
 
-    function getCanvasPoint(clientX, clientY) {
-      const rect = canvas.getBoundingClientRect();
+    function flushDraw() {
+      if (drawRafId != null) {
+        cancelAnimationFrame(drawRafId);
+        drawRafId = null;
+      }
+      draw();
+    }
+
+    function getCanvasPoint(clientX, clientY, rectOpt) {
+      const rect = rectOpt || canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       const x = (clientX - rect.left) * scaleX;
@@ -868,8 +972,8 @@ function onViewportResize() {
       return { x, y };
     }
 
-    function hitCell(clientX, clientY) {
-      const { x, y } = getCanvasPoint(clientX, clientY);
+    function hitCell(clientX, clientY, rectOpt) {
+      const { x, y } = getCanvasPoint(clientX, clientY, rectOpt);
       if (x < PAD || y < PAD) return null;
       const c = Math.floor((x - PAD) / CELL);
       const r = Math.floor((y - PAD) / CELL);
@@ -899,6 +1003,19 @@ function onViewportResize() {
 
       updateStatusText();
 
+      let pathSet = null;
+      if (path.length > 6) {
+        pathSet = new Set();
+        for (let i = 0; i < path.length; i++) {
+          pathSet.add(path[i][0] + "," + path[i][1]);
+        }
+      }
+      function cellInPath(r, c) {
+        if (!path.length) return false;
+        if (pathSet) return pathSet.has(r + "," + c);
+        return pathHas(r, c);
+      }
+
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
           const val = grid[r][c];
@@ -912,19 +1029,21 @@ function onViewportResize() {
           const R = (Math.min(x1 - x0, y1 - y0) / 2) * 0.96;
 
           if (val == null) {
-            drawAppleTile(cx, cy, R, { empty: true, selected: isHighlighted(r, c) });
+            drawAppleTile(cx, cy, R, { empty: true, selected: cellInPath(r, c) });
             continue;
           }
-          const sel = isHighlighted(r, c);
+          const sel = cellInPath(r, c);
           drawAppleTile(cx, cy, R, { empty: false, selected: sel });
           ctx.font = "600 " + getFontPx() + "px Segoe UI, system-ui, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = "#fffdf7";
-          ctx.shadowColor = "rgba(49, 12, 12, 0.55)";
-          ctx.shadowBlur = 3;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 1;
+          if (!dragging) {
+            ctx.shadowColor = "rgba(49, 12, 12, 0.55)";
+            ctx.shadowBlur = 3;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 1;
+          }
           ctx.fillText(String(val), cx, cy + R * 0.06);
           ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
@@ -1003,15 +1122,20 @@ function onViewportResize() {
         ctx.stroke();
         ctx.restore();
       }
+      updatePauseButtonState();
     }
 
     function endGame(reason) {
       if (!gameRunning) return;
+      hidePauseUI();
       gameRunning = false;
       dragging = false;
       anchor = null;
       dragCorner = null;
+      dragStartPos = null;
+      dragNowPos = null;
       path = [];
+      dragCanvasRect = null;
       clearInterval(timerId);
       timerId = null;
       endedBy = reason;
@@ -1054,6 +1178,7 @@ function onViewportResize() {
       canvas.classList.remove("view-finished");
       clearInterval(timerId);
       timerId = null;
+      hidePauseUI();
 
       buildFullGrid();
       score = 0;
@@ -1072,6 +1197,7 @@ function onViewportResize() {
 
       timerId = setInterval(() => {
         if (!gameRunning) return;
+        if (paused) return;
         timeLeft--;
         if (timeLeft === 30 && !spoken30) {
           spoken30 = true;
@@ -1105,40 +1231,59 @@ function onViewportResize() {
         }
         return;
       }
+      if (paused) return;
       const cell = hitCell(e.clientX, e.clientY);
       if (!cell) return;
+      dragCanvasRect = canvas.getBoundingClientRect();
       const [r, c] = cell;
-      const p = getCanvasPoint(e.clientX, e.clientY);
+      const p = getCanvasPoint(e.clientX, e.clientY, dragCanvasRect);
       dragging = true;
       anchor = [r, c];
       dragCorner = [r, c];
       dragStartPos = p;
       dragNowPos = p;
       path = cellsInRect(r, c, r, c);
-      draw();
+      flushDraw();
     }
 
     function onPointerMove(e) {
+      if (paused) return;
       if (!gameRunning || !dragging || !anchor) return;
-      const cell = hitCell(e.clientX, e.clientY);
+      if (!dragCanvasRect) return;
+      const cell = hitCell(e.clientX, e.clientY, dragCanvasRect);
       if (!cell) return;
       const [r, c] = cell;
+      if (dragCorner && dragCorner[0] === r && dragCorner[1] === c) return;
       dragCorner = [r, c];
-      dragNowPos = getCanvasPoint(e.clientX, e.clientY);
+      dragNowPos = getCanvasPoint(e.clientX, e.clientY, dragCanvasRect);
       path = cellsInRect(anchor[0], anchor[1], r, c);
-      draw();
+      scheduleDraw();
     }
 
     function onPointerUp(e) {
+      if (paused) {
+        if (dragging) {
+          dragging = false;
+          anchor = null;
+          dragCorner = null;
+          dragStartPos = null;
+          dragNowPos = null;
+          path = [];
+          dragCanvasRect = null;
+          flushDraw();
+        }
+        return;
+      }
       if (!dragging) return;
       dragging = false;
+      dragCanvasRect = null;
       if (!gameRunning) {
         anchor = null;
         dragCorner = null;
         dragStartPos = null;
         dragNowPos = null;
         path = [];
-        draw();
+        flushDraw();
         return;
       }
 
@@ -1172,7 +1317,7 @@ function onViewportResize() {
             dragStartPos = null;
             dragNowPos = null;
             path = [];
-            draw();
+            flushDraw();
             endGame("nomoves");
             return;
           }
@@ -1184,7 +1329,7 @@ function onViewportResize() {
       dragStartPos = null;
       dragNowPos = null;
       path = [];
-      draw();
+      flushDraw();
     }
 
     resizeCanvas();
@@ -1231,6 +1376,11 @@ canvas.addEventListener("pointerdown", onPointerDown);
     });
 
     window.addEventListener("keydown", (ev) => {
+      if (paused && ev.key === "Escape") {
+        hidePauseUI();
+        flushDraw();
+        return;
+      }
       if (ev.key === "Escape" && previewMode && endedBy === "time") {
         previewMode = false;
         previewMoves = [];
@@ -1263,6 +1413,12 @@ canvas.addEventListener("pointerdown", onPointerDown);
     }
 
     applyBtn.addEventListener("click", applySettings);
+    if (pauseBtn) pauseBtn.addEventListener("click", showPauseUI);
+    if (resumeBtn)
+      resumeBtn.addEventListener("click", () => {
+        hidePauseUI();
+        flushDraw();
+      });
 
     if (!CanvasRenderingContext2D.prototype.roundRect) {
       CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, rad) {
