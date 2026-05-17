@@ -2,31 +2,20 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="theme-color" content="#bcdcff" />
-  <meta name="apple-mobile-web-app-title" content="루이 사과 게임" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#bcdcff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="루이 게임" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icon.png" type="image/png" />
   <link rel="apple-touch-icon" href="./icon.png" />
-  <title>루이 사과 게임 — 합이 10</title>
+  <title>루이 게임 — 합이 10</title>
   <style>
-    html {
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
-    }
     * { box-sizing: border-box; }
     body {
-  overscroll-behavior: none;
-  touch-action: auto;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
       margin: 0;
-      min-height: 100dvh;
-  min-height: -webkit-fill-available;
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -34,24 +23,12 @@
       font-family: "Segoe UI", system-ui, sans-serif;
       color: #1a1a1a;
     }
-    #layout,
-    #main,
-    #settings,
-    .title-row,
-    #status,
-    #overlay {
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
-    }
     #layout {
-  padding-left: max(10px, env(safe-area-inset-left));
-  padding-right: max(10px, env(safe-area-inset-right));
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
       width: min(1100px, 98vw);
       display: flex;
       align-items: flex-start;
       justify-content: center;
-      padding: 12px 10px;
+      padding: 18px 10px;
     }
     #main {
       display: flex;
@@ -59,26 +36,10 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      gap: 3px;
     }
-    .title-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      justify-content: center;
-      gap: 0.35em 0.5em;
-      margin: 0;
-    }
-    .title-row h1 { font-size: 1.1rem; font-weight: 600; margin: 0; }
-    .title-row .last-modified {
-      font-size: max(9px, calc(1.1rem * 0.4));
-      font-weight: 500;
-      line-height: 1.2;
-      color: rgba(26, 26, 26, 0.62);
-      white-space: nowrap;
-    }
-    #status { font-size: 0.95rem; margin: 0; opacity: 0.95; text-align: center; }
-    canvas#board {
+    h1 { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+    #status { font-size: 0.95rem; margin-bottom: 8px; opacity: 0.95; text-align: center; }
+    canvas {
       display: block;
       cursor: crosshair;
       border-radius: 8px;
@@ -86,159 +47,77 @@
       max-width: min(96vw, 520px);
       height: auto;
     }
-    canvas#board.ended { pointer-events: none; cursor: default; opacity: 0.85; }
-    canvas#board.view-finished { pointer-events: none; cursor: default; }
+    canvas.ended { pointer-events: none; cursor: default; opacity: 0.85; }
+    .hint {
+      font-size: 0.8rem;
+      opacity: 0.75;
+      margin-top: 10px;
+      max-width: 480px;
+      text-align: center;
+      line-height: 1.45;
+    }
     #settings {
       width: min(980px, 96vw);
-      font-size: clamp(0.68rem, 2.4vw, 0.88rem);
-      line-height: 1.25;
+      font-size: 0.5rem;
       background: rgba(255, 255, 255, 0.72);
       border: 1px solid rgba(0, 0, 0, 0.10);
-      border-radius: 8px;
-      padding: 2px 6px;
-      margin: 0;
+      border-radius: 10px;
+      padding: 4px 8px;
+      margin: 0 0 6px;
       backdrop-filter: blur(6px);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 6px;
       flex-wrap: wrap;
-      flex-shrink: 0;
     }
     #settings h2 {
       margin: 0;
-      font-size: 1em;
-      font-weight: 600;
+      font-size: 0.5rem;
       white-space: nowrap;
     }
     .field {
       display: flex;
-      gap: 3px;
+      gap: 4px;
       align-items: center;
       padding: 0;
       border-bottom: none;
     }
-    .field label {
-      font-size: 1em;
-      opacity: 0.9;
-    }
-    #settings .field select {
-      box-sizing: border-box;
-      margin: 0;
-      height: auto;
-      min-height: 0;
-      line-height: 1.3;
-      padding: 0 1.4em 0 4px;
+    .field label { font-size: 0.5rem; opacity: 0.9; }
+    .field input {
+      width: 68px;
       font: inherit;
-      font-size: 1em;
-      border-radius: 5px;
+      padding: 2px 5px;
+      border-radius: 6px;
       border: 1px solid rgba(0, 0, 0, 0.18);
-      background: rgba(255, 255, 255, 0.95);
-      color: inherit;
-      vertical-align: middle;
-      cursor: pointer;
-    }
-    #rows-select {
-      min-width: 2.75em;
-      max-width: 5rem;
-    }
-    #timer-select {
-      min-width: 4.25em;
-      max-width: 6.5rem;
+      background: rgba(255, 255, 255, 0.9);
     }
     #apply-btn {
-      box-sizing: border-box;
       width: auto;
-      margin: 0;
-      min-height: 0;
-      min-width: 0;
+      margin-top: 0;
       font: inherit;
-      font-size: 1em;
       font-weight: 700;
-      line-height: 1.3;
-      padding: 0 7px;
+      padding: 3px 8px;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       background: #1a4a8a;
       color: white;
       cursor: pointer;
     }
     #apply-btn:hover { filter: brightness(1.05); }
     #apply-btn:active { transform: scale(0.99); }
-    .settings-apply-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .high-scores {
+    #settings .note {
       margin: 0;
-      font-size: 0.9em;
-      opacity: 0.9;
-      line-height: 1.25;
-      text-align: left;
-      white-space: nowrap;
-    }
-    .high-scores strong {
-      font-weight: 700;
-    }
-    .high-scores-sep {
-      opacity: 0.45;
-      padding: 0 0.15em;
+      font-size: 0.5rem;
+      opacity: 0.75;
+      line-height: 1.4;
     }
     @media (max-width: 900px) {
       #settings {
         width: min(96vw, 520px);
       }
-      canvas#board {
+      canvas {
         max-width: 96vw;
-      }
-    }
-
-    /* 휴대폰 가로·뷰포트 높이가 낮을 때: 사용자 설정을 한 줄로 */
-    @media (orientation: landscape) and (max-height: 560px) {
-      #settings {
-        flex-wrap: nowrap;
-        align-items: center;
-        justify-content: flex-start;
-        width: min(100%, 96vw);
-        max-width: none;
-        gap: 5px;
-        padding: 2px 6px;
-        font-size: clamp(0.58rem, 2.2vmin, 0.78rem);
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
-      }
-      #settings h2 {
-        font-size: clamp(0.58rem, 2vmin, 0.76rem);
-        flex: 0 0 auto;
-      }
-      .field {
-        flex: 0 0 auto;
-        gap: 2px;
-      }
-      .field label {
-        font-size: clamp(0.58rem, 2vmin, 0.76rem);
-      }
-      #settings .field select {
-        padding: 0 1.25em 0 3px;
-        max-width: none;
-      }
-      #apply-btn {
-        padding: 0 6px;
-        flex-shrink: 0;
-      }
-      .settings-apply-row {
-        flex-wrap: nowrap;
-        gap: 5px;
-        flex: 0 0 auto;
-      }
-      .high-scores {
-        font-size: clamp(0.54rem, 2vmin, 0.72rem);
-        white-space: nowrap;
       }
     }
     #overlay {
@@ -268,7 +147,6 @@
     #final-score {
       margin: 0 0 20px;
       font-size: 1.05rem;
-      white-space: pre-line;
     }
     #restart-btn {
       font: inherit;
@@ -283,129 +161,30 @@
     }
     #restart-btn:hover { filter: brightness(1.05); }
     #restart-btn:active { transform: scale(0.98); }
-
-#remain-btn {
-  margin-top: 10px;
-  font: inherit;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 10px 24px;
-  border: none;
-  border-radius: 8px;
-  background: #e8f4ff;
-  color: #1a1a1a;
-  cursor: pointer;
-}
-#remain-btn:hover { filter: brightness(1.02); }
-
-#overlay-close-btn {
-  margin-top: 10px;
-  font: inherit;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 10px 24px;
-  border: none;
-  border-radius: 8px;
-  background: #dfe6ee;
-  color: #1a1a1a;
-  cursor: pointer;
-}
-    #overlay-close-btn:hover { filter: brightness(1.02); }
-
-    #pause-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 12;
-      align-items: center;
-      justify-content: center;
-      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-        max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-      background: rgba(160, 195, 235, 0.5);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-    #pause-overlay.show {
-      display: flex;
-    }
-    #resume-btn {
-      font: inherit;
-      font-size: clamp(1rem, 3.5vw, 1.15rem);
-      font-weight: 700;
-      padding: 14px 40px;
-      border: none;
-      border-radius: 12px;
-      background: #1a4a8a;
-      color: #fff;
-      cursor: pointer;
-      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.24);
-    }
-    #resume-btn:hover { filter: brightness(1.06); }
-    #resume-btn:active { transform: scale(0.98); }
-
-    #pause-btn {
-      box-sizing: border-box;
-      font: inherit;
-      font-size: 1em;
-      font-weight: 600;
-      line-height: 1.3;
-      padding: 0 8px;
-      border: 1px solid rgba(26, 74, 138, 0.5);
-      border-radius: 5px;
-      background: rgba(255, 255, 255, 0.88);
-      color: #1a4a8a;
-      cursor: pointer;
-    }
-    #pause-btn:hover { background: #fff; }
-    #pause-btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-@media (max-width: 520px) {
-  #overlay-box { width: min(360px, calc(100vw - 28px)); padding: 22px 18px; }
-  #restart-btn, #remain-btn, #overlay-close-btn { width: 100%; margin-left: 0; }
-}
-
   </style>
 </head>
 <body>
   <div id="layout">
     <div id="main">
-      <header class="title-row">
-        <h1>루이 사과 게임</h1>
-        <time class="last-modified" id="last-modified" datetime=""></time>
-      </header>
+      <h1>루이 게임</h1>
       <aside id="settings">
         <h2>사용자 설정</h2>
         <div class="field">
-          <label for="rows-select">세로 타일</label>
-          <select id="rows-select" aria-label="세로 타일 수">
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8" selected>8</option>
-            <option value="9">9</option>
-            <option value="10">10</option>
-            <option value="11">11</option>
-            <option value="12">12</option>
-          </select>
+          <label for="size-input">세로 타일</label>
+          <input id="size-input" type="number" min="5" max="30" step="1" value="10" />
         </div>
         <div class="field">
-          <label for="timer-select">타이머</label>
-          <select id="timer-select" aria-label="제한 시간(초)"></select>
+          <label for="timer-input">타이머(초)</label>
+          <input id="timer-input" type="number" min="10" max="999" step="1" value="120" />
         </div>
-        <div class="settings-apply-row">
-          <button type="button" id="apply-btn">적용</button>
-          <button type="button" id="pause-btn">일시정지</button>
-          <p id="high-scores" class="high-scores" aria-live="polite">
-            <span>오늘 최고 <strong id="high-day">0</strong>점</span><span class="high-scores-sep">·</span><span>역대 최고 <strong id="high-all">0</strong>점</span>
-          </p>
-        </div>
+        <button type="button" id="apply-btn">적용</button>
+        <p class="note">가로=세로×2 / 적용 시 새 게임 시작</p>
       </aside>
       <p id="status"></p>
       <canvas id="board"></canvas>
+      <p class="hint" id="hint">
+        17×17 판, 제한 시간 120초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.
+      </p>
     </div>
   </div>
 
@@ -416,62 +195,23 @@
       <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
         <button type="button" id="restart-btn">다시 하기</button>
         <button type="button" id="remain-btn" style="display:none;">남은 타일 확인하기</button>
-<button type="button" id="overlay-close-btn">닫기</button>
       </div>
     </div>
   </div>
 
-  <div id="pause-overlay" aria-hidden="true">
-    <button type="button" id="resume-btn">이어하기</button>
-  </div>
-
   <script>
-    (function initLastModified() {
-      const el = document.getElementById("last-modified");
-      if (!el) return;
-      const d = new Date(document.lastModified);
-      if (Number.isNaN(d.getTime())) return;
-      el.dateTime = d.toISOString().slice(0, 10);
-      el.textContent =
-        "최종 수정 " +
-        d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
-    })();
+    function getRecommendedRows() {
+      const w = window.innerWidth || 1024;
+      if (w <= 480) return 6;   // phone
+      if (w <= 900) return 10;  // tablet / small viewport
+      return 17;                // desktop
+    }
 
-    let ROWS = 8;
+    let ROWS = getRecommendedRows();
     let COLS = ROWS * 2;
-    let CELL = 28;
+    const CELL = 28;
     const PAD = 14;
     let GAME_SECONDS = 120;
-
-function getFontPx() {
-  return Math.max(11, Math.round(CELL * 0.56));
-}
-
-function refreshCellSize() {
-  const vv = window.visualViewport;
-  const iw = Math.min(
-    vv && vv.width ? vv.width : 1e9,
-    window.innerWidth || 1024,
-    document.documentElement.clientWidth || 1024
-  );
-  const ih = Math.min(
-    vv && vv.height ? vv.height : 1e9,
-    window.innerHeight || 800
-  );
-  const maxBoardCssW = Math.min(520, iw * 0.96) - 8;
-  const cellFromW = Math.floor((maxBoardCssW - PAD * 2) / COLS);
-  const reserved = Math.min(260, Math.max(180, ih * 0.38));
-  const maxBoardCssH = Math.max(140, ih - reserved);
-  const cellFromH = Math.floor((maxBoardCssH - PAD * 2) / ROWS);
-  CELL = Math.max(22, Math.min(40, Math.min(cellFromW, cellFromH)));
-}
-
-function onViewportResize() {
-  resizeCanvas();
-  if (dragging) dragCanvasRect = canvas.getBoundingClientRect();
-  draw();
-}
-
 
     const canvas = document.getElementById("board");
     const ctx = canvas.getContext("2d");
@@ -481,144 +221,12 @@ function onViewportResize() {
     const finalScoreEl = document.getElementById("final-score");
     const restartBtn = document.getElementById("restart-btn");
     const remainBtn = document.getElementById("remain-btn");
-    const overlayCloseBtn = document.getElementById("overlay-close-btn");
-    const rowsSelect = document.getElementById("rows-select");
-    const timerSelect = document.getElementById("timer-select");
-    const ROWS_MIN = 4;
-    const ROWS_MAX = 12;
-    const TIMER_MIN = 10;
-    const TIMER_MAX = 300;
-    const TIMER_STEP = 10;
-    const USER_SETTINGS_KEY = "luisegame-apple-user-settings";
-
-    function loadPersistedUserSettings() {
-      try {
-        const raw = localStorage.getItem(USER_SETTINGS_KEY);
-        if (!raw) return null;
-        const o = JSON.parse(raw);
-        if (!o || typeof o !== "object") return null;
-        let rows = Math.floor(Number(o.rows));
-        let timer = Math.floor(Number(o.timer));
-        if (!Number.isFinite(rows) || !Number.isFinite(timer)) return null;
-        rows = Math.max(ROWS_MIN, Math.min(ROWS_MAX, rows));
-        timer = Math.max(TIMER_MIN, Math.min(TIMER_MAX, Math.round(timer / TIMER_STEP) * TIMER_STEP));
-        return { rows, timer };
-      } catch (_) {
-        return null;
-      }
-    }
-
-    function persistUserSettings(rows, timer) {
-      try {
-        localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify({ rows, timer }));
-      } catch (_) {
-        /* ignore */
-      }
-    }
-
-    for (let s = TIMER_MIN; s <= TIMER_MAX; s += TIMER_STEP) {
-      const opt = document.createElement("option");
-      opt.value = String(s);
-      opt.textContent = s + "초";
-      timerSelect.appendChild(opt);
-    }
-    const persisted = loadPersistedUserSettings();
-    if (persisted) {
-      ROWS = persisted.rows;
-      COLS = ROWS * 2;
-      GAME_SECONDS = persisted.timer;
-    }
+    const hintEl = document.getElementById("hint");
+    const sizeInput = document.getElementById("size-input");
+    const timerInput = document.getElementById("timer-input");
     const applyBtn = document.getElementById("apply-btn");
-    const pauseBtn = document.getElementById("pause-btn");
-    const pauseOverlay = document.getElementById("pause-overlay");
-    const resumeBtn = document.getElementById("resume-btn");
-    const highDayEl = document.getElementById("high-day");
-    const highAllEl = document.getElementById("high-all");
 
-    function hidePauseUI() {
-      paused = false;
-      if (pauseOverlay) {
-        pauseOverlay.classList.remove("show");
-        pauseOverlay.setAttribute("aria-hidden", "true");
-      }
-    }
-
-    function showPauseUI() {
-      if (!gameRunning || paused) return;
-      paused = true;
-      dragging = false;
-      anchor = null;
-      dragCorner = null;
-      dragStartPos = null;
-      dragNowPos = null;
-      path = [];
-      dragCanvasRect = null;
-      if (pauseOverlay) {
-        pauseOverlay.classList.add("show");
-        pauseOverlay.setAttribute("aria-hidden", "false");
-      }
-      flushDraw();
-    }
-
-    function updatePauseButtonState() {
-      if (pauseBtn) pauseBtn.disabled = !gameRunning || paused;
-    }
-
-    const HIGH_ALL_KEY = "luisegame-apple-high-all";
-    const HIGH_DAY_KEY = "luisegame-apple-high-day";
-
-    function getLocalDateKey() {
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    }
-
-    function readStoredAllTimeBest() {
-      const v = localStorage.getItem(HIGH_ALL_KEY);
-      const n = parseInt(v, 10);
-      return Number.isFinite(n) ? Math.max(0, n) : 0;
-    }
-
-    function readStoredDailyBest() {
-      try {
-        const raw = localStorage.getItem(HIGH_DAY_KEY);
-        if (!raw) return 0;
-        const o = JSON.parse(raw);
-        if (!o || o.day !== getLocalDateKey() || typeof o.score !== "number") return 0;
-        return Math.max(0, o.score);
-      } catch (_) {
-        return 0;
-      }
-    }
-
-    function refreshHighScoreDisplay() {
-      if (highDayEl) highDayEl.textContent = String(readStoredDailyBest());
-      if (highAllEl) highAllEl.textContent = String(readStoredAllTimeBest());
-    }
-
-    function recordHighScoresIfNeeded(finalScore) {
-      if (!Number.isFinite(finalScore) || finalScore < 0) return;
-      const day = getLocalDateKey();
-      let daily = readStoredDailyBest();
-      if (finalScore > daily) {
-        try {
-          localStorage.setItem(HIGH_DAY_KEY, JSON.stringify({ day, score: finalScore }));
-        } catch (_) {
-          /* ignore quota / private mode */
-        }
-      }
-      const prevAll = readStoredAllTimeBest();
-      if (finalScore > prevAll) {
-        try {
-          localStorage.setItem(HIGH_ALL_KEY, String(finalScore));
-        } catch (_) {
-          /* ignore */
-        }
-      }
-      refreshHighScoreDisplay();
-    }
+    const fontPx = Math.max(11, Math.round(CELL * 0.56));
 
     /** 축 정렬 사과 실루엣 (중심 cx,cy · 반지름 R) */
     function buildAppleBodyPath(cx, cy, R) {
@@ -702,13 +310,16 @@ function onViewportResize() {
     }
 
     function resizeCanvas() {
-  refreshCellSize();
-  canvas.width = COLS * CELL + PAD * 2;
+      canvas.width = COLS * CELL + PAD * 2;
       canvas.height = ROWS * CELL + PAD * 2;
     }
 
+    /** 1~6이 7~9보다 자주 나오도록 (약 2:1) */
     function rand1to9() {
-      return 1 + Math.floor(Math.random() * 9);
+      if (Math.random() < 2 / 3) {
+        return 1 + Math.floor(Math.random() * 6);
+      }
+      return 7 + Math.floor(Math.random() * 3);
     }
 
     let grid = [];
@@ -721,7 +332,6 @@ function onViewportResize() {
     let timeLeft = GAME_SECONDS;
     let gameRunning = false;
     let timerId = null;
-    let paused = false;
     let endedBy = null; // "time" | "nomoves" | null
     let previewMode = false;
     let previewMoves = [];
@@ -729,7 +339,6 @@ function onViewportResize() {
     let previewRect = null; // {r0,c0,r1,c1} | null
     let dragStartPos = null; // {x,y} | null
     let dragNowPos = null;   // {x,y} | null
-
     const CLEAR_POP_MS = 500;
     const CLEAR_POP_SRC = "./clear-pop.png";
     const clearPopImage = new Image();
@@ -896,16 +505,6 @@ function onViewportResize() {
       return false;
     }
 
-    /** 숫자 사과가 남아 있지 않은 상태(모두 제거) */
-    function gridIsFullyCleared() {
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          if (grid[r][c] != null) return false;
-        }
-      }
-      return true;
-    }
-
     function collectMoves(limit = 200) {
       const ps = buildPrefixSum();
       const moves = [];
@@ -944,27 +543,12 @@ function onViewportResize() {
       return path.some(([pr, pc]) => pr === r && pc === c);
     }
 
-    let drawRafId = null;
-    let dragCanvasRect = null;
-
-    function scheduleDraw() {
-      if (drawRafId != null) return;
-      drawRafId = requestAnimationFrame(() => {
-        drawRafId = null;
-        draw();
-      });
+    function isHighlighted(r, c) {
+      return pathHas(r, c);
     }
 
-    function flushDraw() {
-      if (drawRafId != null) {
-        cancelAnimationFrame(drawRafId);
-        drawRafId = null;
-      }
-      draw();
-    }
-
-    function getCanvasPoint(clientX, clientY, rectOpt) {
-      const rect = rectOpt || canvas.getBoundingClientRect();
+    function getCanvasPoint(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       const x = (clientX - rect.left) * scaleX;
@@ -972,8 +556,8 @@ function onViewportResize() {
       return { x, y };
     }
 
-    function hitCell(clientX, clientY, rectOpt) {
-      const { x, y } = getCanvasPoint(clientX, clientY, rectOpt);
+    function hitCell(clientX, clientY) {
+      const { x, y } = getCanvasPoint(clientX, clientY);
       if (x < PAD || y < PAD) return null;
       const c = Math.floor((x - PAD) / CELL);
       const r = Math.floor((y - PAD) / CELL);
@@ -982,19 +566,7 @@ function onViewportResize() {
     }
 
     function updateStatusText() {
-      let line = "남은 시간 " + timeLeft + "초  |  점수 " + score + "점";
-      if (!gameRunning) {
-        statusEl.textContent = line;
-        return;
-      }
-      if (dragging && path.length) {
-        let sumPath = 0;
-        for (const [r, c] of path) sumPath += grid[r][c] || 0;
-        line += "  |  드래그 합: " + sumPath + " (정확히 10)";
-      } else {
-        line += "  |  직사각형으로 영역 지정";
-      }
-      statusEl.textContent = line;
+      statusEl.textContent = "남은 시간 " + timeLeft + "초  |  점수 " + score + "점";
     }
 
     function draw() {
@@ -1002,19 +574,6 @@ function onViewportResize() {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       updateStatusText();
-
-      let pathSet = null;
-      if (path.length > 6) {
-        pathSet = new Set();
-        for (let i = 0; i < path.length; i++) {
-          pathSet.add(path[i][0] + "," + path[i][1]);
-        }
-      }
-      function cellInPath(r, c) {
-        if (!path.length) return false;
-        if (pathSet) return pathSet.has(r + "," + c);
-        return pathHas(r, c);
-      }
 
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
@@ -1029,21 +588,19 @@ function onViewportResize() {
           const R = (Math.min(x1 - x0, y1 - y0) / 2) * 0.96;
 
           if (val == null) {
-            drawAppleTile(cx, cy, R, { empty: true, selected: cellInPath(r, c) });
+            drawAppleTile(cx, cy, R, { empty: true, selected: isHighlighted(r, c) });
             continue;
           }
-          const sel = cellInPath(r, c);
+          const sel = isHighlighted(r, c);
           drawAppleTile(cx, cy, R, { empty: false, selected: sel });
-          ctx.font = "600 " + getFontPx() + "px Segoe UI, system-ui, sans-serif";
+          ctx.font = "600 " + fontPx + "px Segoe UI, system-ui, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = "#fffdf7";
-          if (!dragging) {
-            ctx.shadowColor = "rgba(49, 12, 12, 0.55)";
-            ctx.shadowBlur = 3;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 1;
-          }
+          ctx.shadowColor = "rgba(49, 12, 12, 0.55)";
+          ctx.shadowBlur = 3;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 1;
           ctx.fillText(String(val), cx, cy + R * 0.06);
           ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
@@ -1077,7 +634,7 @@ function onViewportResize() {
         }
       }
 
-      // 드래그 중: 선택 영역 표시
+      // 드래그 중: 실제 터치 시작점부터 범위 표시 + 합 말풍선(항상 바깥)
       if (gameRunning && dragging && anchor && dragCorner) {
         const rmin = Math.min(anchor[0], dragCorner[0]);
         const rmax = Math.max(anchor[0], dragCorner[0]);
@@ -1088,17 +645,91 @@ function onViewportResize() {
         const tileW = (cmax - cmin + 1) * CELL - 2;
         const tileH = (rmax - rmin + 1) * CELL - 2;
 
+        // 합 계산 (빈칸은 0)
+        let sum = 0;
+        for (let rr = rmin; rr <= rmax; rr++) {
+          for (let cc = cmin; cc <= cmax; cc++) {
+            sum += grid[rr][cc] || 0;
+          }
+        }
+
         ctx.save();
         if (dragStartPos && dragNowPos) {
           const rx = Math.min(dragStartPos.x, dragNowPos.x);
           const ry = Math.min(dragStartPos.y, dragNowPos.y);
           const rw = Math.abs(dragNowPos.x - dragStartPos.x);
           const rh = Math.abs(dragNowPos.y - dragStartPos.y);
+          ctx.fillStyle = "rgba(26, 74, 138, 0.08)";
           ctx.beginPath();
           ctx.roundRect(rx, ry, rw, rh, 10);
-          ctx.fillStyle = "rgba(26, 74, 138, 0.08)";
           ctx.fill();
         }
+
+        // 말풍선: 선택 타일 바깥에만 배치
+        const text = String(sum);
+        const bubbleFont = "600 12px Segoe UI, system-ui, sans-serif";
+        ctx.font = bubbleFont;
+        const tw = ctx.measureText(text).width;
+        const padX = 10;
+        const bw = Math.max(30, tw + padX * 2);
+        const bh = 24;
+        let bx;
+        let by;
+        const margin = 8;
+        const upX = Math.max(6, Math.min(canvas.width - bw - 6, tileX + tileW / 2 - bw / 2));
+        const upY = tileY - (bh + margin);
+        const downX = upX;
+        const downY = tileY + tileH + margin;
+        const rightX = tileX + tileW + margin;
+        const rightY = Math.max(6, Math.min(canvas.height - bh - 6, tileY + tileH / 2 - bh / 2));
+        const leftX = tileX - bw - margin;
+        const leftY = rightY;
+
+        if (upY >= 6) {
+          bx = upX; by = upY;
+        } else if (downY + bh <= canvas.height - 6) {
+          bx = downX; by = downY;
+        } else if (rightX + bw <= canvas.width - 6) {
+          bx = rightX; by = rightY;
+        } else if (leftX >= 6) {
+          bx = leftX; by = leftY;
+        } else {
+          bx = upX; by = 6;
+        }
+
+        // 말풍선 본체
+        ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+        ctx.strokeStyle = "rgba(26, 74, 138, 0.65)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, bh, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        // 꼬리(말풍선이 타일 위에 있을 때)
+        const bubbleAbove = by + bh <= tileY;
+        if (bubbleAbove) {
+          const tx = tileX + tileW / 2;
+          const tipX = Math.max(bx + 14, Math.min(bx + bw - 14, tx));
+          const tipY = by + bh;
+          const baseY = tipY;
+          const peakY = Math.min(tileY + 2, tipY + 10);
+          ctx.beginPath();
+          ctx.moveTo(tipX - 7, baseY);
+          ctx.lineTo(tipX + 7, baseY);
+          ctx.lineTo(tipX, peakY);
+          ctx.closePath();
+          ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(26, 74, 138, 0.65)";
+          ctx.stroke();
+        }
+
+        // 텍스트
+        ctx.fillStyle = "#10233b";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, bx + bw / 2, by + bh / 2 + 0.5);
         ctx.restore();
       }
 
@@ -1122,20 +753,15 @@ function onViewportResize() {
         ctx.stroke();
         ctx.restore();
       }
-      updatePauseButtonState();
     }
 
     function endGame(reason) {
       if (!gameRunning) return;
-      hidePauseUI();
       gameRunning = false;
       dragging = false;
       anchor = null;
       dragCorner = null;
-      dragStartPos = null;
-      dragNowPos = null;
       path = [];
-      dragCanvasRect = null;
       clearInterval(timerId);
       timerId = null;
       endedBy = reason;
@@ -1145,23 +771,16 @@ function onViewportResize() {
       previewRect = null;
       canvas.classList.add("ended");
       if (reason === "nomoves") {
+        overlayTitleEl.textContent = "게임 종료";
+        finalScoreEl.textContent = "더이상 타일을 찾을 수 없어 게임을 종료합니다!\n\n최종 점수: " + score + "점 (없앤 사과 " + score + "개)";
         remainBtn.style.display = "none";
-        if (gridIsFullyCleared()) {
-          overlayTitleEl.textContent = "축하합니다! 모두 찾았습니다!";
-          finalScoreEl.textContent = "최종 점수: " + score + "점";
-        } else {
-          overlayTitleEl.textContent = "게임 종료";
-          finalScoreEl.textContent =
-            "더이상 합이 10이 되는 타일을 찾을 수 없습니다.\n\n최종 점수: " + score + "점";
-        }
       } else {
         overlayTitleEl.textContent = "시간 종료";
-        finalScoreEl.textContent = "최종 점수: " + score + "점";
+        finalScoreEl.textContent = "최종 점수: " + score + "점 (없앤 사과 " + score + "개)";
         remainBtn.style.display = anyMoveExists() ? "inline-block" : "none";
       }
       overlay.classList.add("show");
       overlay.setAttribute("aria-hidden", "false");
-      recordHighScoresIfNeeded(score);
       draw();
     }
 
@@ -1175,10 +794,8 @@ function onViewportResize() {
       overlay.classList.remove("show");
       overlay.setAttribute("aria-hidden", "true");
       canvas.classList.remove("ended");
-      canvas.classList.remove("view-finished");
       clearInterval(timerId);
       timerId = null;
-      hidePauseUI();
 
       buildFullGrid();
       score = 0;
@@ -1197,7 +814,6 @@ function onViewportResize() {
 
       timerId = setInterval(() => {
         if (!gameRunning) return;
-        if (paused) return;
         timeLeft--;
         if (timeLeft === 30 && !spoken30) {
           spoken30 = true;
@@ -1231,59 +847,40 @@ function onViewportResize() {
         }
         return;
       }
-      if (paused) return;
       const cell = hitCell(e.clientX, e.clientY);
       if (!cell) return;
-      dragCanvasRect = canvas.getBoundingClientRect();
       const [r, c] = cell;
-      const p = getCanvasPoint(e.clientX, e.clientY, dragCanvasRect);
+      const p = getCanvasPoint(e.clientX, e.clientY);
       dragging = true;
       anchor = [r, c];
       dragCorner = [r, c];
       dragStartPos = p;
       dragNowPos = p;
       path = cellsInRect(r, c, r, c);
-      flushDraw();
+      draw();
     }
 
     function onPointerMove(e) {
-      if (paused) return;
       if (!gameRunning || !dragging || !anchor) return;
-      if (!dragCanvasRect) return;
-      const cell = hitCell(e.clientX, e.clientY, dragCanvasRect);
+      const cell = hitCell(e.clientX, e.clientY);
       if (!cell) return;
       const [r, c] = cell;
-      if (dragCorner && dragCorner[0] === r && dragCorner[1] === c) return;
       dragCorner = [r, c];
-      dragNowPos = getCanvasPoint(e.clientX, e.clientY, dragCanvasRect);
+      dragNowPos = getCanvasPoint(e.clientX, e.clientY);
       path = cellsInRect(anchor[0], anchor[1], r, c);
-      scheduleDraw();
+      draw();
     }
 
     function onPointerUp(e) {
-      if (paused) {
-        if (dragging) {
-          dragging = false;
-          anchor = null;
-          dragCorner = null;
-          dragStartPos = null;
-          dragNowPos = null;
-          path = [];
-          dragCanvasRect = null;
-          flushDraw();
-        }
-        return;
-      }
       if (!dragging) return;
       dragging = false;
-      dragCanvasRect = null;
       if (!gameRunning) {
         anchor = null;
         dragCorner = null;
         dragStartPos = null;
         dragNowPos = null;
         path = [];
-        flushDraw();
+        draw();
         return;
       }
 
@@ -1317,7 +914,7 @@ function onViewportResize() {
             dragStartPos = null;
             dragNowPos = null;
             path = [];
-            flushDraw();
+            draw();
             endGame("nomoves");
             return;
           }
@@ -1329,15 +926,11 @@ function onViewportResize() {
       dragStartPos = null;
       dragNowPos = null;
       path = [];
-      flushDraw();
+      draw();
     }
 
     resizeCanvas();
-    window.addEventListener("resize", onViewportResize);
-if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", onViewportResize);
-}
-canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
     canvas.addEventListener("pointerleave", (ev) => {
@@ -1345,16 +938,6 @@ canvas.addEventListener("pointerdown", onPointerDown);
     });
 
     restartBtn.addEventListener("click", () => startNewGame());
-    if (overlayCloseBtn) {
-      overlayCloseBtn.addEventListener("click", () => {
-        overlay.classList.remove("show");
-        overlay.setAttribute("aria-hidden", "true");
-        canvas.classList.remove("ended");
-        canvas.classList.add("view-finished");
-        draw();
-      });
-    }
-
     remainBtn.addEventListener("click", () => {
       if (endedBy !== "time") return;
       previewMoves = collectMoves(200);
@@ -1371,16 +954,10 @@ canvas.addEventListener("pointerdown", onPointerDown);
       overlay.classList.remove("show");
       overlay.setAttribute("aria-hidden", "true");
       canvas.classList.remove("ended"); // 미리보기 중 클릭/확인 가능
-      canvas.classList.remove("view-finished");
       draw();
     });
 
     window.addEventListener("keydown", (ev) => {
-      if (paused && ev.key === "Escape") {
-        hidePauseUI();
-        flushDraw();
-        return;
-      }
       if (ev.key === "Escape" && previewMode && endedBy === "time") {
         previewMode = false;
         previewMoves = [];
@@ -1395,30 +972,19 @@ canvas.addEventListener("pointerdown", onPointerDown);
     });
 
     function applySettings() {
-      let n = Math.floor(Number(rowsSelect.value));
-      if (!Number.isFinite(n)) n = ROWS;
-      n = Math.max(ROWS_MIN, Math.min(ROWS_MAX, n));
-      let t = Math.floor(Number(timerSelect.value));
-      if (!Number.isFinite(t)) t = GAME_SECONDS;
-      t = Math.max(TIMER_MIN, Math.min(TIMER_MAX, t));
-      t = Math.round(t / TIMER_STEP) * TIMER_STEP;
+      const n = Math.max(5, Math.min(30, Math.floor(Number(sizeInput.value || ROWS))));
+      const t = Math.max(10, Math.min(999, Math.floor(Number(timerInput.value || 120))));
       ROWS = n;
       COLS = n * 2;
       GAME_SECONDS = t;
-      rowsSelect.value = String(n);
-      timerSelect.value = String(t);
-      persistUserSettings(n, t);
+      sizeInput.value = String(n);
+      timerInput.value = String(t);
+      hintEl.innerHTML = `${n}×${n * 2} 판, 제한 시간 ${t}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
       resizeCanvas();
       startNewGame();
     }
 
     applyBtn.addEventListener("click", applySettings);
-    if (pauseBtn) pauseBtn.addEventListener("click", showPauseUI);
-    if (resumeBtn)
-      resumeBtn.addEventListener("click", () => {
-        hidePauseUI();
-        flushDraw();
-      });
 
     if (!CanvasRenderingContext2D.prototype.roundRect) {
       CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, rad) {
@@ -1433,18 +999,8 @@ canvas.addEventListener("pointerdown", onPointerDown);
     }
 
     // 현재 기기에 맞춘 기본값을 설정창에도 동기화
-    ROWS = Math.max(ROWS_MIN, Math.min(ROWS_MAX, ROWS));
-    COLS = ROWS * 2;
-    GAME_SECONDS = Math.max(
-      TIMER_MIN,
-      Math.min(TIMER_MAX, Math.round(GAME_SECONDS / TIMER_STEP) * TIMER_STEP)
-    );
-    rowsSelect.value = String(ROWS);
-    timerSelect.value = String(GAME_SECONDS);
-    refreshHighScoreDisplay();
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") refreshHighScoreDisplay();
-    });
+    sizeInput.value = String(ROWS);
+    hintEl.innerHTML = `${ROWS}×${COLS} 판, 제한 시간 ${GAME_SECONDS}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
