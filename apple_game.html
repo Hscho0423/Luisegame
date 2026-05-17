@@ -2,33 +2,38 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#bcdcff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="루이 게임" />
+  <meta name="apple-mobile-web-app-title" content="루이 사과 게임" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icon.png" type="image/png" />
   <link rel="apple-touch-icon" href="./icon.png" />
-  <title>루이 게임 — 합이 10</title>
+  <title>루이 사과 게임 — 합이 10</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
       background: #bcdcff;
       font-family: "Segoe UI", system-ui, sans-serif;
       color: #1a1a1a;
+      touch-action: auto;
     }
     #layout {
       width: min(1100px, 98vw);
       display: flex;
       align-items: flex-start;
       justify-content: center;
-      padding: 18px 10px;
+      padding: 12px 10px;
+      padding-left: max(10px, env(safe-area-inset-left));
+      padding-right: max(10px, env(safe-area-inset-right));
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
     }
     #main {
       display: flex;
@@ -36,15 +41,40 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      gap: 3px;
     }
-    h1 { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+    .title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: center;
+      gap: 0.35em 0.5em;
+      margin: 0;
+    }
+    .title-row h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+    }
     #app-build {
       font-size: 0.65rem;
       font-weight: 500;
       opacity: 0.55;
-      margin-left: 0.35em;
+      margin-left: 0.15em;
     }
-    #status { font-size: 0.95rem; margin-bottom: 8px; opacity: 0.95; text-align: center; }
+    .title-row .last-modified {
+      font-size: max(9px, calc(1.1rem * 0.4));
+      font-weight: 500;
+      line-height: 1.2;
+      color: rgba(26, 26, 26, 0.62);
+      white-space: nowrap;
+    }
+    #status {
+      font-size: 0.95rem;
+      margin: 0;
+      opacity: 0.95;
+      text-align: center;
+    }
     canvas {
       display: block;
       cursor: crosshair;
@@ -54,32 +84,23 @@
       height: auto;
     }
     canvas.ended { pointer-events: none; cursor: default; opacity: 0.85; }
-    .hint {
-      font-size: 0.8rem;
-      opacity: 0.75;
-      margin-top: 10px;
-      max-width: 480px;
-      text-align: center;
-      line-height: 1.45;
-    }
     #settings {
       width: min(980px, 96vw);
-      font-size: 0.5rem;
+      font-size: clamp(0.68rem, 2.4vw, 0.88rem);
       background: rgba(255, 255, 255, 0.72);
       border: 1px solid rgba(0, 0, 0, 0.10);
-      border-radius: 10px;
-      padding: 4px 8px;
-      margin: 0 0 6px;
+      border-radius: 8px;
+      padding: 2px 6px;
       backdrop-filter: blur(6px);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
       flex-wrap: wrap;
     }
     #settings h2 {
       margin: 0;
-      font-size: 0.5rem;
+      font-size: 1em;
       white-space: nowrap;
     }
     .field {
@@ -87,44 +108,104 @@
       gap: 4px;
       align-items: center;
       padding: 0;
-      border-bottom: none;
     }
-    .field label { font-size: 0.5rem; opacity: 0.9; }
-    .field input {
-      width: 68px;
+    .field label { font-size: 1em; opacity: 0.9; }
+    .field select {
       font: inherit;
+      font-size: 1em;
+      line-height: 1.3;
+      min-height: 0;
       padding: 2px 5px;
       border-radius: 6px;
       border: 1px solid rgba(0, 0, 0, 0.18);
       background: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+    }
+    #rows-select { width: 52px; }
+    #timer-select { width: 72px; }
+    .settings-apply-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #apply-btn,
+    #pause-btn {
+      font: inherit;
+      font-size: 1em;
+      font-weight: 700;
+      line-height: 1.3;
+      min-height: 0;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
     }
     #apply-btn {
-      width: auto;
-      margin-top: 0;
-      font: inherit;
-      font-weight: 700;
-      padding: 3px 8px;
       border: none;
-      border-radius: 6px;
       background: #1a4a8a;
       color: white;
-      cursor: pointer;
     }
     #apply-btn:hover { filter: brightness(1.05); }
     #apply-btn:active { transform: scale(0.99); }
-    #settings .note {
+    #pause-btn {
+      border: 1.5px solid #1a4a8a;
+      background: rgba(255, 255, 255, 0.92);
+      color: #1a4a8a;
+    }
+    #pause-btn:hover { filter: brightness(1.02); }
+    #pause-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .high-scores {
       margin: 0;
-      font-size: 0.5rem;
-      opacity: 0.75;
-      line-height: 1.4;
+      font-size: 0.9em;
+      opacity: 0.9;
+      line-height: 1.25;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .high-scores strong { font-weight: 700; }
+    .high-scores-sep {
+      opacity: 0.45;
+      padding: 0 0.15em;
     }
     @media (max-width: 900px) {
+      #settings { width: min(96vw, 520px); }
+      canvas { max-width: 96vw; }
+    }
+    @media (orientation: landscape) and (max-height: 560px) {
       #settings {
-        width: min(96vw, 520px);
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-start;
+        width: min(100%, 96vw);
+        max-width: none;
+        gap: 5px;
+        padding: 2px 6px;
+        font-size: clamp(0.62rem, 2.2vmin, 0.78rem);
+        overflow-x: auto;
       }
-      canvas {
-        max-width: 96vw;
+      #settings h2 { flex-shrink: 0; }
+      .field { flex-shrink: 0; }
+      .field select {
+        width: 50px;
+        min-height: 34px;
+        padding: 2px 4px;
       }
+      #timer-select { width: 62px; }
+      #apply-btn,
+      #pause-btn {
+        flex-shrink: 0;
+        min-height: 34px;
+        padding: 2px 7px;
+      }
+      .settings-apply-row {
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+      }
+      .high-scores { font-size: 0.88em; }
     }
     #overlay {
       display: none;
@@ -134,9 +215,11 @@
       align-items: center;
       justify-content: center;
       z-index: 10;
+      padding: 16px;
     }
     #overlay.show { display: flex; }
     #overlay-box {
+      position: relative;
       background: #2d5016;
       border: 2px solid #ffe066;
       border-radius: 12px;
@@ -145,6 +228,22 @@
       min-width: 260px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
     }
+    #overlay-close-btn {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 1.35rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    #overlay-close-btn:hover { filter: brightness(1.08); }
     #overlay-box h2 {
       margin: 0 0 12px;
       font-size: 1.25rem;
@@ -153,8 +252,10 @@
     #final-score {
       margin: 0 0 20px;
       font-size: 1.05rem;
+      white-space: pre-line;
     }
-    #restart-btn {
+    #restart-btn,
+    #remain-btn {
       font: inherit;
       font-size: 1rem;
       font-weight: 600;
@@ -165,37 +266,93 @@
       color: #1a1a1a;
       cursor: pointer;
     }
-    #restart-btn:hover { filter: brightness(1.05); }
-    #restart-btn:active { transform: scale(0.98); }
+    #restart-btn:hover,
+    #remain-btn:hover { filter: brightness(1.05); }
+    #restart-btn:active,
+    #remain-btn:active { transform: scale(0.98); }
+    #pause-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 12;
+      align-items: center;
+      justify-content: center;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+        max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      background: rgba(160, 195, 235, 0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    #pause-overlay.show { display: flex; }
+    #resume-btn {
+      font: inherit;
+      font-size: clamp(1rem, 3.5vw, 1.15rem);
+      font-weight: 700;
+      padding: 14px 40px;
+      border: none;
+      border-radius: 12px;
+      background: #1a4a8a;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(26, 74, 138, 0.35);
+    }
+    #resume-btn:hover { filter: brightness(1.06); }
+    #resume-btn:active { transform: scale(0.98); }
+    @media (max-width: 520px) {
+      #overlay-box {
+        width: min(360px, calc(100vw - 28px));
+        padding: 22px 18px;
+      }
+      #restart-btn,
+      #remain-btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
   <div id="layout">
     <div id="main">
-      <h1>루이 게임<span id="app-build" aria-hidden="true"></span></h1>
+      <header class="title-row">
+        <h1>루이 사과 게임<span id="app-build" aria-hidden="true"></span></h1>
+        <time id="last-modified" class="last-modified" datetime=""></time>
+      </header>
       <aside id="settings">
         <h2>사용자 설정</h2>
         <div class="field">
-          <label for="size-input">세로 타일</label>
-          <input id="size-input" type="number" min="5" max="30" step="1" value="10" />
+          <label for="rows-select">세로 타일</label>
+          <select id="rows-select" aria-label="세로 타일 수">
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8" selected>8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+          </select>
         </div>
         <div class="field">
-          <label for="timer-input">타이머(초)</label>
-          <input id="timer-input" type="number" min="10" max="999" step="1" value="120" />
+          <label for="timer-select">타이머</label>
+          <select id="timer-select" aria-label="제한 시간"></select>
         </div>
-        <button type="button" id="apply-btn">적용</button>
-        <p class="note">가로=세로×2 / 적용 시 새 게임 시작</p>
+        <div class="settings-apply-row">
+          <button type="button" id="apply-btn">적용</button>
+          <button type="button" id="pause-btn" disabled>일시정지</button>
+          <p id="high-scores" class="high-scores" aria-live="polite">
+            <span>오늘 최고 <strong id="high-day">0</strong>점</span><span class="high-scores-sep">·</span><span>역대 최고 <strong id="high-all">0</strong>점</span>
+          </p>
+        </div>
       </aside>
       <p id="status"></p>
       <canvas id="board"></canvas>
-      <p class="hint" id="hint">
-        17×17 판, 제한 시간 120초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.
-      </p>
     </div>
   </div>
 
   <div id="overlay" aria-hidden="true">
     <div id="overlay-box">
+      <button type="button" id="overlay-close-btn" aria-label="닫기">×</button>
       <h2 id="overlay-title">시간 종료</h2>
       <p id="final-score"></p>
       <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
@@ -205,14 +362,34 @@
     </div>
   </div>
 
+  <div id="pause-overlay" aria-hidden="true">
+    <button type="button" id="resume-btn">이어하기</button>
+  </div>
+
   <script>
-    const APP_BUILD = "6";
+    const APP_BUILD = "7";
     const BUILD_STORAGE_KEY = "luisegame-app-build";
 
     (function showBuildBadge() {
       const el = document.getElementById("app-build");
       if (el) el.textContent = " · 빌드 " + APP_BUILD;
     })();
+
+    function formatLastModified() {
+      const el = document.getElementById("last-modified");
+      if (!el) return;
+      const d = new Date(document.lastModified);
+      if (isNaN(d.getTime())) return;
+      el.setAttribute("datetime", d.toISOString().slice(0, 10));
+      el.textContent =
+        "최종 수정 " +
+        new Intl.DateTimeFormat("ko-KR", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }).format(d);
+    }
+    formatLastModified();
 
     async function purgeStalePwaCacheIfNeeded() {
       if (localStorage.getItem(BUILD_STORAGE_KEY) === APP_BUILD) return;
@@ -235,18 +412,123 @@
       }
     }
 
-    function getRecommendedRows() {
-      const w = window.innerWidth || 1024;
-      if (w <= 480) return 6;   // phone
-      if (w <= 900) return 10;  // tablet / small viewport
-      return 17;                // desktop
-    }
+    const ROWS_MIN = 4;
+    const ROWS_MAX = 12;
+    const TIMER_MIN = 10;
+    const TIMER_MAX = 300;
+    const TIMER_STEP = 10;
+    const USER_SETTINGS_KEY = "luisegame-apple-user-settings";
+    const HIGH_ALL_KEY = "luisegame-apple-high-all";
+    const HIGH_DAY_KEY = "luisegame-apple-high-day";
 
-    let ROWS = getRecommendedRows();
+    let ROWS = 8;
     let COLS = ROWS * 2;
-    const CELL = 28;
+    let CELL = 28;
     const PAD = 14;
     let GAME_SECONDS = 120;
+
+    function refreshCellSize() {
+      const vv = window.visualViewport;
+      const iw = Math.min(
+        vv && vv.width ? vv.width : 1e9,
+        window.innerWidth || 1024,
+        document.documentElement.clientWidth || 1024
+      );
+      const ih = Math.min(
+        vv && vv.height ? vv.height : 1e9,
+        window.innerHeight || 800
+      );
+      const maxBoardCssW = Math.min(520, iw * 0.96) - 8;
+      const cellFromW = Math.floor((maxBoardCssW - PAD * 2) / COLS);
+      const reserved = Math.min(260, Math.max(180, ih * 0.38));
+      const maxBoardCssH = Math.max(140, ih - reserved);
+      const cellFromH = Math.floor((maxBoardCssH - PAD * 2) / ROWS);
+      CELL = Math.max(22, Math.min(40, Math.min(cellFromW, cellFromH)));
+    }
+
+    function getFontPx() {
+      return Math.max(11, Math.round(CELL * 0.56));
+    }
+
+    function loadPersistedUserSettings() {
+      try {
+        const raw = localStorage.getItem(USER_SETTINGS_KEY);
+        if (!raw) return null;
+        const o = JSON.parse(raw);
+        if (!o || typeof o !== "object") return null;
+        let rows = Math.floor(Number(o.rows));
+        let timer = Math.floor(Number(o.timer));
+        if (!Number.isFinite(rows) || !Number.isFinite(timer)) return null;
+        rows = Math.max(ROWS_MIN, Math.min(ROWS_MAX, rows));
+        timer = Math.max(
+          TIMER_MIN,
+          Math.min(TIMER_MAX, Math.round(timer / TIMER_STEP) * TIMER_STEP)
+        );
+        return { rows, timer };
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function persistUserSettings(rows, timer) {
+      try {
+        localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify({ rows, timer }));
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
+    function todayLocalISO() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return y + "-" + m + "-" + day;
+    }
+
+    function updateHighScoreDisplay() {
+      let allScore = 0;
+      let dayScore = 0;
+      try {
+        const allRaw = localStorage.getItem(HIGH_ALL_KEY);
+        const allN = Math.floor(Number(allRaw));
+        if (Number.isFinite(allN) && allN > 0) allScore = allN;
+        const dayRaw = localStorage.getItem(HIGH_DAY_KEY);
+        if (dayRaw) {
+          const o = JSON.parse(dayRaw);
+          if (o && o.day === todayLocalISO()) {
+            const n = Math.floor(Number(o.score));
+            if (Number.isFinite(n) && n > 0) dayScore = n;
+          }
+        }
+      } catch (_) {
+        /* ignore */
+      }
+      if (highDayEl) highDayEl.textContent = String(dayScore);
+      if (highAllEl) highAllEl.textContent = String(allScore);
+    }
+
+    function recordHighScores(finalScore) {
+      const score = Math.floor(Number(finalScore));
+      if (!Number.isFinite(score) || score <= 0) return;
+      try {
+        const prevAll = Math.floor(Number(localStorage.getItem(HIGH_ALL_KEY))) || 0;
+        if (score > prevAll) localStorage.setItem(HIGH_ALL_KEY, String(score));
+        const today = todayLocalISO();
+        let dayScore = 0;
+        const dayRaw = localStorage.getItem(HIGH_DAY_KEY);
+        if (dayRaw) {
+          const o = JSON.parse(dayRaw);
+          if (o && o.day === today) dayScore = Math.floor(Number(o.score)) || 0;
+        }
+        if (score > dayScore) {
+          localStorage.setItem(HIGH_DAY_KEY, JSON.stringify({ day: today, score }));
+        }
+      } catch (_) {
+        /* ignore */
+      }
+      updateHighScoreDisplay();
+    }
 
     const canvas = document.getElementById("board");
     const ctx = canvas.getContext("2d");
@@ -256,12 +538,73 @@
     const finalScoreEl = document.getElementById("final-score");
     const restartBtn = document.getElementById("restart-btn");
     const remainBtn = document.getElementById("remain-btn");
-    const hintEl = document.getElementById("hint");
-    const sizeInput = document.getElementById("size-input");
-    const timerInput = document.getElementById("timer-input");
+    const overlayCloseBtn = document.getElementById("overlay-close-btn");
+    const rowsSelect = document.getElementById("rows-select");
+    const timerSelect = document.getElementById("timer-select");
     const applyBtn = document.getElementById("apply-btn");
+    const pauseBtn = document.getElementById("pause-btn");
+    const pauseOverlay = document.getElementById("pause-overlay");
+    const resumeBtn = document.getElementById("resume-btn");
+    const highDayEl = document.getElementById("high-day");
+    const highAllEl = document.getElementById("high-all");
 
-    const fontPx = Math.max(11, Math.round(CELL * 0.56));
+    function populateTimerSelect() {
+      timerSelect.innerHTML = "";
+      for (let s = TIMER_MIN; s <= TIMER_MAX; s += TIMER_STEP) {
+        const opt = document.createElement("option");
+        opt.value = String(s);
+        opt.textContent = s + "초";
+        timerSelect.appendChild(opt);
+      }
+    }
+    populateTimerSelect();
+
+    const saved = loadPersistedUserSettings();
+    if (saved) {
+      ROWS = saved.rows;
+      GAME_SECONDS = saved.timer;
+    }
+    ROWS = Math.max(ROWS_MIN, Math.min(ROWS_MAX, ROWS));
+    COLS = ROWS * 2;
+    GAME_SECONDS = Math.max(
+      TIMER_MIN,
+      Math.min(TIMER_MAX, Math.round(GAME_SECONDS / TIMER_STEP) * TIMER_STEP)
+    );
+    rowsSelect.value = String(ROWS);
+    timerSelect.value = String(GAME_SECONDS);
+    updateHighScoreDisplay();
+
+    function hidePauseUI() {
+      paused = false;
+      if (pauseOverlay) {
+        pauseOverlay.classList.remove("show");
+        pauseOverlay.setAttribute("aria-hidden", "true");
+      }
+      updatePauseButtonState();
+      flushDraw();
+    }
+
+    function showPauseUI() {
+      if (!gameRunning || paused) return;
+      paused = true;
+      dragging = false;
+      anchor = null;
+      dragCorner = null;
+      dragStartPos = null;
+      dragNowPos = null;
+      path = [];
+      dragCanvasRect = null;
+      if (pauseOverlay) {
+        pauseOverlay.classList.add("show");
+        pauseOverlay.setAttribute("aria-hidden", "false");
+      }
+      updatePauseButtonState();
+      flushDraw();
+    }
+
+    function updatePauseButtonState() {
+      if (pauseBtn) pauseBtn.disabled = !gameRunning || paused;
+    }
 
     /** 축 정렬 사과 실루엣 (중심 cx,cy · 반지름 R) */
     function buildAppleBodyPath(cx, cy, R) {
@@ -305,7 +648,6 @@
       buildAppleBodyPath(cx, cy, R);
 
       if (empty) {
-        // 빈칸은 보드 배경색과 동일하게 처리
         ctx.fillStyle = "#bcdcff";
         ctx.strokeStyle = sel ? "#ffb366" : "rgba(0,0,0,0.08)";
         ctx.lineWidth = sel ? 2 : 1.2;
@@ -328,7 +670,6 @@
       g.addColorStop(1, "#660708");
       ctx.fillStyle = g;
       ctx.fill();
-      // 드래그 선택은 색 변화보다 "테두리 굵기"로만 강조
       ctx.strokeStyle = sel ? "#7a0b0d" : "#380607";
       ctx.lineWidth = sel ? 2.6 : 1.35;
       ctx.stroke();
@@ -345,6 +686,7 @@
     }
 
     function resizeCanvas() {
+      refreshCellSize();
       canvas.width = COLS * CELL + PAD * 2;
       canvas.height = ROWS * CELL + PAD * 2;
     }
@@ -358,27 +700,29 @@
     }
 
     let grid = [];
-    /** 드래그 시작 칸 · 현재 모서리 — 직사각형 = 두 점의 축정렬 바운딩 박스 */
     let anchor = null;
     let dragCorner = null;
     let path = [];
     let dragging = false;
+    let paused = false;
     let score = 0;
     let timeLeft = GAME_SECONDS;
     let gameRunning = false;
     let timerId = null;
-    let endedBy = null; // "time" | "nomoves" | null
+    let endedBy = null;
     let previewMode = false;
     let previewMoves = [];
     let previewIndex = 0;
-    let previewRect = null; // {r0,c0,r1,c1} | null
-    let dragStartPos = null; // {x,y} | null
-    let dragNowPos = null;   // {x,y} | null
+    let previewRect = null;
+    let dragStartPos = null;
+    let dragNowPos = null;
+    let drawRafId = null;
+    let dragCanvasRect = null;
     const CLEAR_POP_MS = 500;
     const CLEAR_POP_SRC = "./clear-pop.png";
     const clearPopImage = new Image();
     let clearPopReady = false;
-    let clearPopEffects = []; // {r,c,until}
+    let clearPopEffects = [];
     let clearPopRafId = null;
     clearPopImage.addEventListener("load", () => {
       clearPopReady = true;
@@ -409,13 +753,10 @@
       clearPopRafId = requestAnimationFrame(tick);
     }
 
-    // --- sound (clear: 뾰로롱) ---
     let audioCtx = null;
     function playClearSound(clearedCount) {
       try {
         const base = Math.max(1, Math.floor(clearedCount || 1));
-        // 요청 규칙: 2개=4음, 이후 타일 1개 증가마다 +4음
-        // 예) 2->4, 3->8, 4->12 ...
         const n = Math.max(1, Math.min(24, base >= 2 ? (base - 1) * 4 : 1));
         if (!audioCtx) {
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -426,14 +767,12 @@
         const master = audioCtx.createGain();
         master.gain.setValueAtTime(0.0001, now);
         master.gain.exponentialRampToValueAtTime(1.68, now + 0.01);
-        // 길이는 없앤 개수에 따라 늘어남
-        const step = 0.075; // 한 음 길이
+        const step = 0.075;
         const totalDur = Math.min(0.95, 0.10 + n * step);
         master.gain.exponentialRampToValueAtTime(0.0001, now + totalDur);
         master.connect(audioCtx.destination);
 
-        // 뾰로롱: 위로 올라가는 음계 (펜타토닉 느낌)
-        const freqs = [740.0, 880.0, 1108.73, 1320.0, 1760.0, 2217.46]; // F#5 A5 C#6 E6 A6 C#7
+        const freqs = [740.0, 880.0, 1108.73, 1320.0, 1760.0, 2217.46];
 
         for (let i = 0; i < n; i++) {
           const t0 = now + i * step;
@@ -445,7 +784,6 @@
           osc.type = "triangle";
           osc.frequency.setValueAtTime(f, t0);
 
-          // 짧은 per-note 엔벨로프
           g.gain.setValueAtTime(0.0001, t0);
           g.gain.exponentialRampToValueAtTime(1.20, t0 + 0.012);
           g.gain.exponentialRampToValueAtTime(0.0001, t1);
@@ -456,13 +794,12 @@
           osc.stop(t1 + 0.01);
         }
       } catch (_) {
-        // ignore audio failures
+        /* ignore */
       }
     }
 
-    // --- timer cue sound ---
     let spoken30 = false;
-    let lastCountdownSpoken = null; // number | null
+    let lastCountdownSpoken = null;
     function playTimerCue(secLeft) {
       try {
         if (!audioCtx) {
@@ -486,21 +823,19 @@
         };
 
         if (secLeft === 30) {
-          // 30초 알림: 약 2.5초 길이의 경쾌한 알림
           const total = 2.5;
           const interval = 0.33;
           const dur = 0.16;
           for (let t = 0; t < total; t += interval) {
-            const f = (Math.floor(t / interval) % 2 === 0) ? 880 : 1174.66;
+            const f = Math.floor(t / interval) % 2 === 0 ? 880 : 1174.66;
             playBeep(f, now + t, dur, 0.16);
           }
           return;
         }
-        // 10초 이하는 1음 카운트
         const high = secLeft <= 3;
         playBeep(high ? 1320 : 1046.5, now, 0.13, 0.18);
       } catch (_) {
-        // ignore
+        /* ignore */
       }
     }
 
@@ -538,6 +873,15 @@
         }
       }
       return false;
+    }
+
+    function gridIsFullyCleared() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (grid[r][c] != null) return false;
+        }
+      }
+      return true;
     }
 
     function collectMoves(limit = 200) {
@@ -578,12 +922,24 @@
       return path.some(([pr, pc]) => pr === r && pc === c);
     }
 
-    function isHighlighted(r, c) {
-      return pathHas(r, c);
+    function scheduleDraw() {
+      if (drawRafId != null) return;
+      drawRafId = requestAnimationFrame(() => {
+        drawRafId = null;
+        draw();
+      });
     }
 
-    function getCanvasPoint(clientX, clientY) {
-      const rect = canvas.getBoundingClientRect();
+    function flushDraw() {
+      if (drawRafId != null) {
+        cancelAnimationFrame(drawRafId);
+        drawRafId = null;
+      }
+      draw();
+    }
+
+    function getCanvasPoint(clientX, clientY, rectOpt) {
+      const rect = rectOpt || canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       const x = (clientX - rect.left) * scaleX;
@@ -591,8 +947,8 @@
       return { x, y };
     }
 
-    function hitCell(clientX, clientY) {
-      const { x, y } = getCanvasPoint(clientX, clientY);
+    function hitCell(clientX, clientY, rectOpt) {
+      const { x, y } = getCanvasPoint(clientX, clientY, rectOpt);
       if (x < PAD || y < PAD) return null;
       const c = Math.floor((x - PAD) / CELL);
       const r = Math.floor((y - PAD) / CELL);
@@ -610,6 +966,20 @@
 
       updateStatusText();
 
+      const fontPx = getFontPx();
+      let pathSet = null;
+      if (path.length > 6) {
+        pathSet = new Set();
+        for (let i = 0; i < path.length; i++) {
+          pathSet.add(path[i][0] + "," + path[i][1]);
+        }
+      }
+      function cellInPath(r, c) {
+        if (!path.length) return false;
+        if (pathSet) return pathSet.has(r + "," + c);
+        return pathHas(r, c);
+      }
+
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
           const val = grid[r][c];
@@ -623,19 +993,21 @@
           const R = (Math.min(x1 - x0, y1 - y0) / 2) * 0.96;
 
           if (val == null) {
-            drawAppleTile(cx, cy, R, { empty: true, selected: isHighlighted(r, c) });
+            drawAppleTile(cx, cy, R, { empty: true, selected: cellInPath(r, c) });
             continue;
           }
-          const sel = isHighlighted(r, c);
+          const sel = cellInPath(r, c);
           drawAppleTile(cx, cy, R, { empty: false, selected: sel });
           ctx.font = "600 " + fontPx + "px Segoe UI, system-ui, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = "#fffdf7";
-          ctx.shadowColor = "rgba(49, 12, 12, 0.55)";
-          ctx.shadowBlur = 3;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 1;
+          if (!dragging) {
+            ctx.shadowColor = "rgba(49, 12, 12, 0.55)";
+            ctx.shadowBlur = 3;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 1;
+          }
           ctx.fillText(String(val), cx, cy + R * 0.06);
           ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
@@ -643,7 +1015,6 @@
         }
       }
 
-      // 타일 제거 연출: 해당 칸에 0.5초간 이미지 표시
       if (clearPopReady && clearPopEffects.length) {
         const now = performance.now();
         clearPopEffects = clearPopEffects.filter((e) => e.until > now);
@@ -669,106 +1040,19 @@
         }
       }
 
-      // 드래그 중: 실제 터치 시작점부터 범위 표시 + 합 말풍선(항상 바깥)
-      if (gameRunning && dragging && anchor && dragCorner) {
-        const rmin = Math.min(anchor[0], dragCorner[0]);
-        const rmax = Math.max(anchor[0], dragCorner[0]);
-        const cmin = Math.min(anchor[1], dragCorner[1]);
-        const cmax = Math.max(anchor[1], dragCorner[1]);
-        const tileX = PAD + cmin * CELL + 1;
-        const tileY = PAD + rmin * CELL + 1;
-        const tileW = (cmax - cmin + 1) * CELL - 2;
-        const tileH = (rmax - rmin + 1) * CELL - 2;
-
-        // 합 계산 (빈칸은 0)
-        let sum = 0;
-        for (let rr = rmin; rr <= rmax; rr++) {
-          for (let cc = cmin; cc <= cmax; cc++) {
-            sum += grid[rr][cc] || 0;
-          }
-        }
-
+      if (gameRunning && dragging && dragStartPos && dragNowPos) {
+        const rx = Math.min(dragStartPos.x, dragNowPos.x);
+        const ry = Math.min(dragStartPos.y, dragNowPos.y);
+        const rw = Math.abs(dragNowPos.x - dragStartPos.x);
+        const rh = Math.abs(dragNowPos.y - dragStartPos.y);
         ctx.save();
-        if (dragStartPos && dragNowPos) {
-          const rx = Math.min(dragStartPos.x, dragNowPos.x);
-          const ry = Math.min(dragStartPos.y, dragNowPos.y);
-          const rw = Math.abs(dragNowPos.x - dragStartPos.x);
-          const rh = Math.abs(dragNowPos.y - dragStartPos.y);
-          ctx.fillStyle = "rgba(26, 74, 138, 0.08)";
-          ctx.beginPath();
-          ctx.roundRect(rx, ry, rw, rh, 10);
-          ctx.fill();
-        }
-
-        // 말풍선: 선택 타일 바깥에만 배치
-        const text = String(sum);
-        const bubbleFont = "600 12px Segoe UI, system-ui, sans-serif";
-        ctx.font = bubbleFont;
-        const tw = ctx.measureText(text).width;
-        const padX = 10;
-        const bw = Math.max(30, tw + padX * 2);
-        const bh = 24;
-        let bx;
-        let by;
-        const margin = 8;
-        const upX = Math.max(6, Math.min(canvas.width - bw - 6, tileX + tileW / 2 - bw / 2));
-        const upY = tileY - (bh + margin);
-        const downX = upX;
-        const downY = tileY + tileH + margin;
-        const rightX = tileX + tileW + margin;
-        const rightY = Math.max(6, Math.min(canvas.height - bh - 6, tileY + tileH / 2 - bh / 2));
-        const leftX = tileX - bw - margin;
-        const leftY = rightY;
-
-        if (upY >= 6) {
-          bx = upX; by = upY;
-        } else if (downY + bh <= canvas.height - 6) {
-          bx = downX; by = downY;
-        } else if (rightX + bw <= canvas.width - 6) {
-          bx = rightX; by = rightY;
-        } else if (leftX >= 6) {
-          bx = leftX; by = leftY;
-        } else {
-          bx = upX; by = 6;
-        }
-
-        // 말풍선 본체
-        ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
-        ctx.strokeStyle = "rgba(26, 74, 138, 0.65)";
-        ctx.lineWidth = 1.5;
+        ctx.fillStyle = "rgba(26, 74, 138, 0.08)";
         ctx.beginPath();
-        ctx.roundRect(bx, by, bw, bh, 10);
+        ctx.roundRect(rx, ry, rw, rh, 10);
         ctx.fill();
-        ctx.stroke();
-
-        // 꼬리(말풍선이 타일 위에 있을 때)
-        const bubbleAbove = by + bh <= tileY;
-        if (bubbleAbove) {
-          const tx = tileX + tileW / 2;
-          const tipX = Math.max(bx + 14, Math.min(bx + bw - 14, tx));
-          const tipY = by + bh;
-          const baseY = tipY;
-          const peakY = Math.min(tileY + 2, tipY + 10);
-          ctx.beginPath();
-          ctx.moveTo(tipX - 7, baseY);
-          ctx.lineTo(tipX + 7, baseY);
-          ctx.lineTo(tipX, peakY);
-          ctx.closePath();
-          ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
-          ctx.fill();
-          ctx.strokeStyle = "rgba(26, 74, 138, 0.65)";
-          ctx.stroke();
-        }
-
-        // 텍스트
-        ctx.fillStyle = "#10233b";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(text, bx + bw / 2, by + bh / 2 + 0.5);
         ctx.restore();
       }
 
-      // 미리보기(남은 타일 확인): 타일 색을 바꾸지 않고 테두리/반투명 박스로만 표시
       if (previewMode && previewRect) {
         const rmin = Math.min(previewRect.r0, previewRect.r1);
         const rmax = Math.max(previewRect.r0, previewRect.r1);
@@ -792,11 +1076,13 @@
 
     function endGame(reason) {
       if (!gameRunning) return;
+      hidePauseUI();
       gameRunning = false;
       dragging = false;
       anchor = null;
       dragCorner = null;
       path = [];
+      dragCanvasRect = null;
       clearInterval(timerId);
       timerId = null;
       endedBy = reason;
@@ -805,13 +1091,23 @@
       previewIndex = 0;
       previewRect = null;
       canvas.classList.add("ended");
+      updatePauseButtonState();
+      recordHighScores(score);
+
+      const finalLine = "최종 점수: " + score + "점";
       if (reason === "nomoves") {
-        overlayTitleEl.textContent = "게임 종료";
-        finalScoreEl.textContent = "더이상 타일을 찾을 수 없어 게임을 종료합니다!\n\n최종 점수: " + score + "점 (없앤 사과 " + score + "개)";
+        if (gridIsFullyCleared()) {
+          overlayTitleEl.textContent = "축하합니다! 모두 찾았습니다!";
+          finalScoreEl.textContent = finalLine;
+        } else {
+          overlayTitleEl.textContent = "게임 종료";
+          finalScoreEl.textContent =
+            "더이상 타일을 찾을 수 없어 게임을 종료합니다!\n\n" + finalLine;
+        }
         remainBtn.style.display = "none";
       } else {
         overlayTitleEl.textContent = "시간 종료";
-        finalScoreEl.textContent = "최종 점수: " + score + "점 (없앤 사과 " + score + "개)";
+        finalScoreEl.textContent = finalLine;
         remainBtn.style.display = anyMoveExists() ? "inline-block" : "none";
       }
       overlay.classList.add("show");
@@ -826,6 +1122,7 @@
     }
 
     function startNewGame() {
+      hidePauseUI();
       overlay.classList.remove("show");
       overlay.setAttribute("aria-hidden", "true");
       canvas.classList.remove("ended");
@@ -839,6 +1136,7 @@
       anchor = null;
       dragCorner = null;
       dragging = false;
+      dragCanvasRect = null;
       gameRunning = true;
       previewMode = false;
       previewMoves = [];
@@ -846,9 +1144,10 @@
       previewRect = null;
       spoken30 = false;
       lastCountdownSpoken = null;
+      updatePauseButtonState();
 
       timerId = setInterval(() => {
-        if (!gameRunning) return;
+        if (!gameRunning || paused) return;
         timeLeft--;
         if (timeLeft === 30 && !spoken30) {
           spoken30 = true;
@@ -872,13 +1171,14 @@
     }
 
     function onPointerDown(e) {
+      if (paused) return;
       if (!gameRunning) {
         if (previewMode && previewMoves.length) {
           previewIndex = (previewIndex + 1) % previewMoves.length;
           const m = previewMoves[previewIndex];
           previewRect = m;
-          path = []; // 타일 색(선택) 변경 방지 — 숫자는 그대로 보이게
-          draw();
+          path = [];
+          flushDraw();
         }
         return;
       }
@@ -886,36 +1186,39 @@
       if (!cell) return;
       const [r, c] = cell;
       const p = getCanvasPoint(e.clientX, e.clientY);
+      dragCanvasRect = canvas.getBoundingClientRect();
       dragging = true;
       anchor = [r, c];
       dragCorner = [r, c];
       dragStartPos = p;
       dragNowPos = p;
       path = cellsInRect(r, c, r, c);
-      draw();
+      flushDraw();
     }
 
     function onPointerMove(e) {
-      if (!gameRunning || !dragging || !anchor) return;
-      const cell = hitCell(e.clientX, e.clientY);
+      if (paused || !gameRunning || !dragging || !anchor) return;
+      const cell = hitCell(e.clientX, e.clientY, dragCanvasRect);
       if (!cell) return;
       const [r, c] = cell;
+      if (dragCorner && dragCorner[0] === r && dragCorner[1] === c) return;
       dragCorner = [r, c];
-      dragNowPos = getCanvasPoint(e.clientX, e.clientY);
+      dragNowPos = getCanvasPoint(e.clientX, e.clientY, dragCanvasRect);
       path = cellsInRect(anchor[0], anchor[1], r, c);
-      draw();
+      scheduleDraw();
     }
 
     function onPointerUp(e) {
       if (!dragging) return;
       dragging = false;
-      if (!gameRunning) {
+      dragCanvasRect = null;
+      if (paused || !gameRunning) {
         anchor = null;
         dragCorner = null;
         dragStartPos = null;
         dragNowPos = null;
         path = [];
-        draw();
+        flushDraw();
         return;
       }
 
@@ -949,7 +1252,7 @@
             dragStartPos = null;
             dragNowPos = null;
             path = [];
-            draw();
+            flushDraw();
             endGame("nomoves");
             return;
           }
@@ -961,6 +1264,12 @@
       dragStartPos = null;
       dragNowPos = null;
       path = [];
+      flushDraw();
+    }
+
+    function onViewportResize() {
+      resizeCanvas();
+      if (dragging) dragCanvasRect = canvas.getBoundingClientRect();
       draw();
     }
 
@@ -971,6 +1280,10 @@
     canvas.addEventListener("pointerleave", (ev) => {
       if (dragging) onPointerUp(ev);
     });
+    window.addEventListener("resize", onViewportResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", onViewportResize);
+    }
 
     restartBtn.addEventListener("click", () => startNewGame());
     remainBtn.addEventListener("click", () => {
@@ -988,33 +1301,57 @@
       }
       overlay.classList.remove("show");
       overlay.setAttribute("aria-hidden", "true");
-      canvas.classList.remove("ended"); // 미리보기 중 클릭/확인 가능
+      canvas.classList.remove("ended");
       draw();
     });
 
+    overlayCloseBtn.addEventListener("click", () => {
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
+      canvas.classList.remove("ended");
+      draw();
+    });
+
+    pauseBtn.addEventListener("click", () => showPauseUI());
+    resumeBtn.addEventListener("click", () => hidePauseUI());
+
     window.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape" && previewMode && endedBy === "time") {
-        previewMode = false;
-        previewMoves = [];
-        previewIndex = 0;
-        previewRect = null;
-        path = [];
-        overlay.classList.add("show");
-        overlay.setAttribute("aria-hidden", "false");
-        canvas.classList.add("ended");
-        draw();
+      if (ev.key === "Escape") {
+        if (paused) {
+          hidePauseUI();
+          return;
+        }
+        if (previewMode && endedBy === "time") {
+          previewMode = false;
+          previewMoves = [];
+          previewIndex = 0;
+          previewRect = null;
+          path = [];
+          overlay.classList.add("show");
+          overlay.setAttribute("aria-hidden", "false");
+          canvas.classList.add("ended");
+          draw();
+        }
       }
     });
 
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") updateHighScoreDisplay();
+    });
+
     function applySettings() {
-      const n = Math.max(5, Math.min(30, Math.floor(Number(sizeInput.value || ROWS))));
-      const t = Math.max(10, Math.min(999, Math.floor(Number(timerInput.value || 120))));
+      let n = Math.floor(Number(rowsSelect.value));
+      if (!Number.isFinite(n)) n = ROWS;
+      n = Math.max(ROWS_MIN, Math.min(ROWS_MAX, n));
+      let t = Math.floor(Number(timerSelect.value));
+      if (!Number.isFinite(t)) t = GAME_SECONDS;
+      t = Math.max(TIMER_MIN, Math.min(TIMER_MAX, Math.round(t / TIMER_STEP) * TIMER_STEP));
       ROWS = n;
       COLS = n * 2;
       GAME_SECONDS = t;
-      sizeInput.value = String(n);
-      timerInput.value = String(t);
-      hintEl.innerHTML = `${n}×${n * 2} 판, 제한 시간 ${t}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
+      rowsSelect.value = String(n);
+      timerSelect.value = String(t);
+      persistUserSettings(n, t);
       resizeCanvas();
       startNewGame();
     }
@@ -1032,10 +1369,6 @@
         this.closePath();
       };
     }
-
-    // 현재 기기에 맞춘 기본값을 설정창에도 동기화
-    sizeInput.value = String(ROWS);
-    hintEl.innerHTML = `${ROWS}×${COLS} 판, 제한 시간 ${GAME_SECONDS}초. 마우스로 <strong>직사각형 영역</strong>만 지정할 수 있습니다(ㄱ·ㄴ 모양 불가). 합이 정확히 10이면 그 사각형 안의 숫자 사과만 없어지며, 빈칸은 합에 0·시작 칸으로도 사용 가능합니다. 사과 1개 = 1점.`;
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
