@@ -1,5 +1,5 @@
 /** 배포할 때마다 숫자를 올리세요 (apple_game.html의 APP_BUILD와 맞추면 좋음) */
-const SW_BUILD = "7";
+const SW_BUILD = "10";
 
 const CACHE_NAME = "loui-game-assets-" + SW_BUILD;
 

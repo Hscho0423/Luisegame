@@ -367,7 +367,7 @@
   </div>
 
   <script>
-    const APP_BUILD = "7";
+    const APP_BUILD = "10";
     const BUILD_STORAGE_KEY = "luisegame-app-build";
 
     (function showBuildBadge() {
@@ -531,7 +531,7 @@
     }
 
     const canvas = document.getElementById("board");
-    const ctx = canvas.getContext("2d");
+    let ctx = canvas.getContext("2d");
     const statusEl = document.getElementById("status");
     const overlay = document.getElementById("overlay");
     const overlayTitleEl = document.getElementById("overlay-title");
@@ -574,14 +574,15 @@
     timerSelect.value = String(GAME_SECONDS);
     updateHighScoreDisplay();
 
-    function hidePauseUI() {
+    function hidePauseUI(redraw) {
+      const wasPaused = paused;
       paused = false;
       if (pauseOverlay) {
         pauseOverlay.classList.remove("show");
         pauseOverlay.setAttribute("aria-hidden", "true");
       }
       updatePauseButtonState();
-      flushDraw();
+      if (redraw !== false && wasPaused) flushDraw();
     }
 
     function showPauseUI() {
@@ -687,8 +688,24 @@
 
     function resizeCanvas() {
       refreshCellSize();
-      canvas.width = COLS * CELL + PAD * 2;
-      canvas.height = ROWS * CELL + PAD * 2;
+      const w = COLS * CELL + PAD * 2;
+      const h = ROWS * CELL + PAD * 2;
+      canvas.width = w;
+      canvas.height = h;
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx = canvas.getContext("2d");
+    }
+
+    function ensureGridReady() {
+      if (
+        !Array.isArray(grid) ||
+        grid.length !== ROWS ||
+        !grid[0] ||
+        grid[0].length !== COLS
+      ) {
+        buildFullGrid();
+      }
     }
 
     /** 1~6이 7~9보다 자주 나오도록 (약 2:1) */
@@ -961,6 +978,8 @@
     }
 
     function draw() {
+      if (!ctx) ctx = canvas.getContext("2d");
+      ensureGridReady();
       ctx.fillStyle = "#bcdcff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -991,23 +1010,21 @@
           const cx = (x0 + x1) / 2;
           const cy = (y0 + y1) / 2 + CELL * 0.05;
           const R = (Math.min(x1 - x0, y1 - y0) / 2) * 0.96;
+          const sel = cellInPath(r, c);
 
           if (val == null) {
-            drawAppleTile(cx, cy, R, { empty: true, selected: cellInPath(r, c) });
+            drawAppleTile(cx, cy, R, { empty: true, selected: sel });
             continue;
           }
-          const sel = cellInPath(r, c);
           drawAppleTile(cx, cy, R, { empty: false, selected: sel });
           ctx.font = "600 " + fontPx + "px Segoe UI, system-ui, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = "#fffdf7";
-          if (!dragging) {
-            ctx.shadowColor = "rgba(49, 12, 12, 0.55)";
-            ctx.shadowBlur = 3;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 1;
-          }
+          ctx.shadowColor = "rgba(49, 12, 12, 0.55)";
+          ctx.shadowBlur = 3;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 1;
           ctx.fillText(String(val), cx, cy + R * 0.06);
           ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
@@ -1040,16 +1057,18 @@
         }
       }
 
-      if (gameRunning && dragging && dragStartPos && dragNowPos) {
-        const rx = Math.min(dragStartPos.x, dragNowPos.x);
-        const ry = Math.min(dragStartPos.y, dragNowPos.y);
-        const rw = Math.abs(dragNowPos.x - dragStartPos.x);
-        const rh = Math.abs(dragNowPos.y - dragStartPos.y);
+      if (gameRunning && !paused && dragging && anchor && dragCorner) {
         ctx.save();
-        ctx.fillStyle = "rgba(26, 74, 138, 0.08)";
-        ctx.beginPath();
-        ctx.roundRect(rx, ry, rw, rh, 10);
-        ctx.fill();
+        if (dragStartPos && dragNowPos) {
+          const rx = Math.min(dragStartPos.x, dragNowPos.x);
+          const ry = Math.min(dragStartPos.y, dragNowPos.y);
+          const rw = Math.abs(dragNowPos.x - dragStartPos.x);
+          const rh = Math.abs(dragNowPos.y - dragStartPos.y);
+          ctx.fillStyle = "rgba(26, 74, 138, 0.08)";
+          ctx.beginPath();
+          ctx.roundRect(rx, ry, rw, rh, 10);
+          ctx.fill();
+        }
         ctx.restore();
       }
 
@@ -1122,7 +1141,7 @@
     }
 
     function startNewGame() {
-      hidePauseUI();
+      hidePauseUI(false);
       overlay.classList.remove("show");
       overlay.setAttribute("aria-hidden", "true");
       canvas.classList.remove("ended");
@@ -1130,6 +1149,13 @@
       timerId = null;
 
       buildFullGrid();
+      resizeCanvas();
+      let shuffleTries = 0;
+      while (!anyMoveExists() && shuffleTries < 8) {
+        buildFullGrid();
+        shuffleTries++;
+      }
+
       score = 0;
       timeLeft = GAME_SECONDS;
       path = [];
@@ -1273,7 +1299,6 @@
       draw();
     }
 
-    resizeCanvas();
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
