@@ -38,6 +38,12 @@
       flex-shrink: 0;
     }
     h1 { font-size: 1.1rem; font-weight: 600; margin: 0 0 8px; }
+    #app-build {
+      font-size: 0.65rem;
+      font-weight: 500;
+      opacity: 0.55;
+      margin-left: 0.35em;
+    }
     #status { font-size: 0.95rem; margin-bottom: 8px; opacity: 0.95; text-align: center; }
     canvas {
       display: block;
@@ -166,7 +172,7 @@
 <body>
   <div id="layout">
     <div id="main">
-      <h1>루이 게임</h1>
+      <h1>루이 게임<span id="app-build" aria-hidden="true"></span></h1>
       <aside id="settings">
         <h2>사용자 설정</h2>
         <div class="field">
@@ -200,6 +206,35 @@
   </div>
 
   <script>
+    const APP_BUILD = "6";
+    const BUILD_STORAGE_KEY = "luisegame-app-build";
+
+    (function showBuildBadge() {
+      const el = document.getElementById("app-build");
+      if (el) el.textContent = " · 빌드 " + APP_BUILD;
+    })();
+
+    async function purgeStalePwaCacheIfNeeded() {
+      if (localStorage.getItem(BUILD_STORAGE_KEY) === APP_BUILD) return;
+      try {
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+      } catch (_) {
+        /* ignore */
+      }
+      localStorage.setItem(BUILD_STORAGE_KEY, APP_BUILD);
+      if (localStorage.getItem(BUILD_STORAGE_KEY + "-reloaded") !== APP_BUILD) {
+        localStorage.setItem(BUILD_STORAGE_KEY + "-reloaded", APP_BUILD);
+        window.location.reload();
+      }
+    }
+
     function getRecommendedRows() {
       const w = window.innerWidth || 1024;
       if (w <= 480) return 6;   // phone
@@ -1004,10 +1039,36 @@
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js").catch(() => {
-          // no-op: offline cache unavailable
+        purgeStalePwaCacheIfNeeded().then(() => {
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+          });
+          return navigator.serviceWorker
+            .register("./service-worker.js", { scope: "./", updateViaCache: "none" })
+            .then((reg) => {
+              reg.update();
+              const onNewWorker = (worker) => {
+                worker.addEventListener("statechange", () => {
+                  if (worker.state === "installed" && navigator.serviceWorker.controller) {
+                    worker.postMessage({ type: "SKIP_WAITING" });
+                  }
+                });
+              };
+              if (reg.waiting) onNewWorker(reg.waiting);
+              reg.addEventListener("updatefound", () => {
+                if (reg.installing) onNewWorker(reg.installing);
+              });
+            })
+            .catch(() => {
+              /* offline or file:// */
+            });
         });
       });
+    } else {
+      purgeStalePwaCacheIfNeeded();
     }
 
     startNewGame();
