@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0e6a45" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="루이 블랙잭" />
+  <link rel="icon" href="./blackjack-icon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="./blackjack-icon.png" />
+  <title>루이 블랙잭</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      background: #8ebfe6;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: #163024;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+    }
+    #app {
+      width: min(430px, 100%);
+      height: 100dvh;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(ellipse at 50% 18%, rgba(255,255,255,.16), transparent 42%),
+        radial-gradient(ellipse at 50% 70%, #1a9a62, #0c5c3c 72%);
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: calc(10px + env(safe-area-inset-top)) 14px 6px;
+    }
+    .logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+      flex: none;
+    }
+    .titles { flex: 1; min-width: 0; }
+    h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+    }
+    .rule {
+      margin: 1px 0 0;
+      font-size: 11px;
+      opacity: .78;
+    }
+    #bank-pill {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 16px;
+      padding: 6px 10px 4px;
+      text-align: right;
+      line-height: 1.15;
+    }
+    #bank-pill small {
+      display: block;
+      font-size: 10px;
+      opacity: .75;
+    }
+    #bank-pill strong {
+      font-size: 14px;
+      font-weight: 750;
+    }
+    #reset-btn {
+      margin-top: 2px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-size: 10px;
+      opacity: .75;
+      text-decoration: underline;
+      padding: 0;
+    }
+    #table {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 4px 12px 8px;
+    }
+    .hand-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 13px;
+      padding: 0 4px 4px;
+      text-shadow: 0 1px 2px rgba(0,0,0,.25);
+    }
+    .hand-meta b { font-weight: 700; }
+    .score.bust { color: #ffd0d0; }
+    .cards {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 96px;
+      width: 100%;
+    }
+    .card {
+      width: 68px;
+      height: 96px;
+      flex: none;
+      position: relative;
+      filter: drop-shadow(0 6px 8px rgba(0,0,0,.28));
+    }
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform .45s ease;
+    }
+    .card.face-down .card-inner { transform: rotateY(180deg); }
+    .face, .back {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .face {
+      background: #fffef8;
+      color: #1a1a1a;
+      overflow: hidden;
+    }
+    .card.red .face { color: #d31232; }
+    .back {
+      background:
+        radial-gradient(circle at 50% 46%, #f4fff8 0 16px, transparent 17px),
+        repeating-linear-gradient(45deg, #157a4e 0 7px, #0e6842 7px 14px);
+      transform: rotateY(180deg);
+      border: 2px solid rgba(255,255,255,.45);
+    }
+    .back img {
+      position: absolute;
+      left: 50%;
+      top: 46%;
+      width: 34px;
+      height: 34px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .corner {
+      position: absolute;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1;
+      font-weight: 800;
+    }
+    .corner b { font-size: 13px; }
+    .corner.ten b { font-size: 11px; letter-spacing: -0.04em; }
+    .corner i { font-style: normal; font-size: 11px; }
+    .corner.tl { top: 4px; left: 4px; }
+    .corner.br { bottom: 4px; right: 4px; transform: rotate(180deg); }
+    .pips { position: absolute; inset: 16px 8px; }
+    .pip {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      font-size: 13px;
+      line-height: 1;
+    }
+    .pip.flip { transform: translate(-50%, -50%) rotate(180deg); }
+    .portrait {
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      top: 16px;
+      bottom: 16px;
+      border-radius: 5px;
+      overflow: hidden;
+      background: #efe8dc;
+    }
+    .portrait img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .ace-mark {
+      position: absolute;
+      left: 50%;
+      top: 52%;
+      width: 58%;
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 2px 6px rgba(0,0,0,.18);
+    }
+    .card.deal { animation: dealIn .32s ease both; }
+    @keyframes dealIn {
+      from { transform: translateY(-18px) scale(.94); opacity: 0; }
+      to { transform: none; opacity: 1; }
+    }
+    #bet-zone {
+      flex: 1;
+      min-height: 108px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    #side-bets {
+      width: min(280px, 94%);
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    #side-bets[hidden], .side-spot[hidden] { display: none; }
+    .side-spot, #bet-spot { color: inherit; font: inherit; }
+    .side-spot {
+      flex: 1;
+      max-width: 168px;
+      min-height: 74px;
+      border-radius: 14px;
+      border: 2px dashed rgba(255,255,255,.45);
+      background: rgba(0,0,0,.12);
+      position: relative;
+      padding: 0;
+    }
+    .spot-name, .spot-odds, .spot-amt {
+      position: absolute;
+      left: 0;
+      right: 0;
+      text-align: center;
+      pointer-events: none;
+      text-shadow: 0 1px 2px rgba(0,0,0,.35);
+    }
+    .spot-name { top: 3px; font-size: 11px; font-weight: 800; }
+    .spot-odds { top: 16px; font-size: 10px; opacity: .8; }
+    .spot-amt { bottom: 3px; font-size: 11px; font-weight: 750; }
+    .mini-stack { position: absolute; inset: 0; }
+    #bet-spot.active, .side-spot.active {
+      border-style: solid;
+      border-color: #ffe08a;
+      box-shadow: 0 0 0 3px rgba(255,224,138,.28);
+    }
+    .side-spot.hot, #bet-spot.hot {
+      border-color: #ffe08a;
+      box-shadow: 0 0 0 4px rgba(255,224,138,.35);
+      background: rgba(255,224,138,.16);
+    }
+    .stack-chip.flyer {
+      position: absolute;
+      margin: 0;
+      z-index: 30;
+      pointer-events: none;
+    }
+    #bet-spot {
+      width: min(220px, 78%);
+      min-height: 96px;
+      border-radius: 18px;
+      border: 2px dashed rgba(255,255,255,.45);
+      background: rgba(0,0,0,.12);
+      position: relative;
+      color: inherit;
+      font: inherit;
+      padding: 0;
+    }
+    #bet-spot.armed {
+      border-style: solid;
+      border-color: rgba(255,236,170,.85);
+      background: rgba(255,255,255,.08);
+    }
+    #bet-spot .spot-name { top: 4px; }
+    #chip-stack { position: absolute; inset: 0; }
+    .stack-chip {
+      position: absolute;
+      left: 50%;
+      width: 40px;
+      height: 40px;
+      margin-left: -20px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid #fff;
+      box-shadow: 0 3px 6px rgba(0,0,0,.28);
+    }
+    .stack-chip.pop { animation: pop .18s ease; }
+    @keyframes pop {
+      from { transform: scale(.7); }
+      to { transform: none; }
+    }
+    #bet-empty {
+      position: absolute;
+      inset: 18px 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.35;
+      opacity: .88;
+      pointer-events: none;
+    }
+    #bet-empty[hidden] { display: none; }
+    #bet-amount {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 6px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 750;
+      text-shadow: 0 1px 2px rgba(0,0,0,.35);
+      pointer-events: none;
+    }
+    #message {
+      margin: 0;
+      min-height: 1.2em;
+      font-size: 13px;
+      text-align: center;
+      text-shadow: 0 1px 2px rgba(0,0,0,.25);
+    }
+    #toast {
+      margin: 0 8px;
+      border-radius: 14px;
+      padding: 8px 12px;
+      text-align: center;
+      background: rgba(255,255,255,.94);
+      color: #1c2a22;
+      box-shadow: 0 8px 18px rgba(0,0,0,.18);
+    }
+    #toast[hidden] { display: none; }
+    #toast.win { background: #fff4cc; }
+    #toast.lose { background: #ffe1e1; }
+    #toast.push { background: #eef3f6; }
+    #toast strong { display: block; font-size: 16px; }
+    #toast span { font-size: 12px; opacity: .8; }
+    #action-bar {
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
+    }
+    #action-bar button, #bet-done {
+      border: 0;
+      border-radius: 14px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    #action-bar button {
+      flex: 1;
+      min-height: 48px;
+      background: #fffef8;
+      color: #145c38;
+    }
+    #action-bar button.primary { background: #ffe08a; color: #3d2b00; }
+    #action-bar button:disabled {
+      opacity: .4;
+      cursor: default;
+    }
+    #action-bar button:active:not(:disabled) { transform: scale(.98); }
+    .sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+      transform: translateY(110%);
+      transition: transform .28s cubic-bezier(.2,.8,.2,1);
+      background: #fff8ef;
+      color: #2a2118;
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 -10px 30px rgba(0,0,0,.28);
+      padding: 8px 10px calc(12px + env(safe-area-inset-bottom));
+    }
+    .sheet.open { transform: translateY(0); }
+    .handle {
+      width: 100%;
+      height: 22px;
+      margin: 0 0 4px;
+      border: 0;
+      display: block;
+      padding: 0;
+      background: transparent;
+      position: relative;
+    }
+    .handle::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 6px;
+      width: 42px;
+      height: 5px;
+      transform: translateX(-50%);
+      border-radius: 99px;
+      background: #e2d3c2;
+    }
+    .sheet-row {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .chip-list {
+      flex: 1;
+      display: flex;
+      gap: 4px;
+      min-width: 0;
+    }
+    .chip {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      touch-action: none;
+      cursor: grab;
+    }
+    .chip:disabled { opacity: .35; filter: grayscale(.4); }
+    .chip-face {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      overflow: hidden;
+      position: relative;
+      border: 3px solid var(--ring, #c4a574);
+      box-shadow: 0 3px 0 rgba(0,0,0,.08), inset 0 0 0 2px rgba(255,255,255,.7);
+      background: #f3e6d4;
+    }
+    .chip small { font-size: 9px; line-height: 1.1; letter-spacing: -0.04em; white-space: nowrap; }
+    .chip b { font-size: 11px; line-height: 1.1; }
+    .snack {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: var(--zoom, 220%);
+      height: var(--zoom, 220%);
+      max-width: none;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      object-position: var(--x, 50%) var(--y, 50%);
+      pointer-events: none;
+    }
+    #bet-done {
+      width: 74px;
+      flex: none;
+      background: #145c38;
+      color: #fff;
+      line-height: 1.25;
+      font-size: 15px;
+    }
+    #bet-done:disabled { opacity: .4; }
+    #bet-done:active:not(:disabled) { transform: scale(.98); }
+    .ghost-chip {
+      position: fixed;
+      z-index: 20;
+      width: 58px;
+      height: 58px;
+      margin-left: -29px;
+      margin-top: -64px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid #fff;
+      box-shadow: 0 10px 18px rgba(0,0,0,.3);
+      pointer-events: none;
+      background: #fff;
+    }
+    .chip.shake { animation: chipShake .35s linear; }
+    @keyframes chipShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .sheet.shake { animation: sheetShake .35s linear; }
+    @keyframes sheetShake {
+      0%, 100% { transform: translateY(0); }
+      25% { transform: translate(-5px, 0); }
+      75% { transform: translate(5px, 0); }
+    }
+    @media (max-width: 360px) {
+      .card { width: 58px; height: 82px; }
+      .chip-face { width: 46px; height: 46px; }
+      .pip { font-size: 11px; }
+    }
+    @media (max-height: 680px) {
+      .card { width: 56px; height: 80px; }
+      .cards { min-height: 82px; }
+      .side-spot { min-height: 64px; }
+      #bet-spot { min-height: 84px; }
+      .logo { width: 28px; height: 28px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .card-inner, .sheet, .card.deal, .stack-chip.pop { transition: none; animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <img class="logo" src="./blackjack-icon.png" alt="" />
+      <div class="titles">
+        <h1>루이 블랙잭</h1>
+        <p class="rule">블랙잭 3:2 · 페어 11배 · 인슈어런스 2배</p>
+      </div>
+      <div id="bank-pill">
+        <small>보유</small>
+        <strong id="bank">50,000원</strong>
+        <button type="button" id="reset-btn">5만으로</button>
+      </div>
+    </header>
+
+    <main id="table">
+      <section>
+        <div class="hand-meta">
+          <span>딜러</span>
+          <b id="dealer-score" class="score"></b>
+        </div>
+        <div id="dealer-cards" class="cards"></div>
+      </section>
+
+      <section id="bet-zone">
+        <div id="side-bets">
+          <button type="button" id="insure-spot" class="side-spot" data-pot="insure" aria-label="인슈어런스 베팅">
+            <span class="spot-name">인슈어런스</span>
+            <span class="spot-odds">2배 · A일 때</span>
+            <div class="mini-stack"></div>
+            <span class="spot-amt">0원</span>
+          </button>
+          <button type="button" id="pair-spot" class="side-spot" data-pot="pair" aria-label="페어 베팅">
+            <span class="spot-name">페어</span>
+            <span class="spot-odds">11배</span>
+            <div class="mini-stack"></div>
+            <span class="spot-amt">0원</span>
+          </button>
+        </div>
+        <button type="button" id="bet-spot" data-pot="main" aria-label="기본 베팅. 누르면 마지막 간식을 뺍니다.">
+          <span class="spot-name">기본</span>
+          <div id="chip-stack"></div>
+          <div id="bet-empty">간식을 탭하거나<br />여기로 끌어오세요</div>
+          <div id="bet-amount">0원</div>
+        </button>
+        <p id="message">베팅하기를 눌러 간식을 올려 주세요</p>
+        <div id="toast" hidden>
+          <strong id="toast-title"></strong>
+          <span id="toast-sub"></span>
+        </div>
+      </section>
+
+      <section>
+        <div class="hand-meta">
+          <span>나</span>
+          <b id="player-score" class="score"></b>
+        </div>
+        <div id="player-cards" class="cards"></div>
+      </section>
+    </main>
+
+    <footer id="action-bar"></footer>
+
+    <div id="sheet" class="sheet" aria-hidden="true">
+      <button type="button" class="handle" id="sheet-handle" aria-label="베팅 창 닫기"></button>
+      <div class="sheet-row">
+        <div class="chip-list" id="chip-list"></div>
+        <button type="button" id="bet-done">베팅<br />완료</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BANK_KEY = "luise-blackjack-bank-v1";
+    const START_BANK = 50000;
+    const FACE_SRC = {
+      J: "./루이게임 세로버전/luise-win-wave.png",
+      Q: "./루이게임 세로버전/luise-happy.png",
+      K: "./루이게임 세로버전/luise-win-smile.png",
+    };
+    const FACE_POS = {
+      J: { pos: "68% 60%", scale: 1.35 },
+      Q: { pos: "50% 40%", scale: 1.85 },
+      K: { pos: "58% 42%", scale: 1.7 },
+    };
+    const ACE_SRC = "./icon.png";
+    const SUITS = [
+      { id: "s", sym: "♠", red: false },
+      { id: "h", sym: "♥", red: true },
+      { id: "d", sym: "♦", red: true },
+      { id: "c", sym: "♣", red: false },
+    ];
+    const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+    const PIPS = {
+      2: [[50, 16], [50, 84, 1]],
+      3: [[50, 16], [50, 50], [50, 84, 1]],
+      4: [[28, 18], [72, 18], [28, 82, 1], [72, 82, 1]],
+      5: [[28, 18], [72, 18], [50, 50], [28, 82, 1], [72, 82, 1]],
+      6: [[28, 16], [72, 16], [28, 50], [72, 50], [28, 84, 1], [72, 84, 1]],
+      7: [[28, 16], [72, 16], [50, 34], [28, 52], [72, 52], [28, 84, 1], [72, 84, 1]],
+      8: [[28, 14], [72, 14], [28, 38], [72, 38], [28, 62], [72, 62], [28, 86, 1], [72, 86, 1]],
+      9: [[28, 14], [72, 14], [28, 36], [72, 36], [50, 50], [28, 64], [72, 64], [28, 86, 1], [72, 86, 1]],
+      10: [[28, 13], [72, 13], [50, 28], [28, 40], [72, 40], [28, 60], [72, 60], [50, 74, 1], [28, 87, 1], [72, 87, 1]],
+    };
+    const CHIPS = [
+      { value: 100, name: "사료", file: "./chips/kibble.jpg", x: "50%", y: "50%", zoom: "118%", ring: "#c4a574" },
+      { value: 500, name: "북어간식", file: "./chips/pollock.jpg", x: "50%", y: "50%", zoom: "148%", ring: "#d9d3c4" },
+      { value: 1000, name: "연어간식", file: "./chips/salmon.jpg", x: "50%", y: "50%", zoom: "155%", ring: "#e07a4a" },
+      { value: 5000, name: "고구마간식", file: "./chips/sweetpotato.jpg", x: "50%", y: "52%", zoom: "175%", ring: "#e0a04a" },
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const actionBar = $("action-bar");
+    const sheet = $("sheet");
+    const betSpot = $("bet-spot");
+    const chipStack = $("chip-stack");
+    const messageEl = $("message");
+
+    let bank = loadBank();
+    let bet = 0;
+    let betChips = [];
+    let pairBet = 0;
+    let pairChips = [];
+    let insureBet = 0;
+    let insureChips = [];
+    let bonusMain = [];
+    let bonusPair = [];
+    let bonusInsure = [];
+    let insureLabel = "";
+    let hidePair = false;
+    let showInsure = false;
+    let activePot = "main";
+    let sideNotes = [];
+    let audioCtx = null;
+    let deck = [];
+    let player = [];
+    let dealer = [];
+    let phase = "betting";
+    let holeHidden = true;
+    let busy = false;
+    let sheetOpen = false;
+    let toast = null;
+
+    function loadBank() {
+      const raw = localStorage.getItem(BANK_KEY);
+      if (raw == null || raw === "") return START_BANK;
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n < 0) return START_BANK;
+      return Math.floor(n);
+    }
+    function saveBank() {
+      localStorage.setItem(BANK_KEY, String(bank));
+    }
+    function won(n) {
+      return Math.round(n).toLocaleString("ko-KR") + "원";
+    }
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+    function committed() {
+      return bet + pairBet;
+    }
+    function fundsLeft() {
+      if (phase === "insurance") return bank - insureBet;
+      return bank - committed();
+    }
+    function canEditPot(pot) {
+      if (busy) return false;
+      if (phase === "betting") return pot !== "insure";
+      if (phase === "insurance") return pot === "insure";
+      return false;
+    }
+    function potChips(pot) {
+      if (pot === "pair") return pairChips;
+      if (pot === "insure") return insureChips;
+      return betChips;
+    }
+    function potAmount(pot) {
+      if (pot === "pair") return pairBet;
+      if (pot === "insure") return insureBet;
+      return bet;
+    }
+    function setPotAmount(pot, amount) {
+      if (pot === "pair") pairBet = amount;
+      else if (pot === "insure") insureBet = amount;
+      else bet = amount;
+    }
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+    function playChipSound() {
+      try {
+        const ctx = ensureAudio();
+        const now = ctx.currentTime;
+        const dur = 0.04;
+        const count = Math.floor(ctx.sampleRate * dur);
+        const buffer = ctx.createBuffer(1, count, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < count; i += 1) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / count, 3);
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = ctx.createBiquadFilter();
+        filter.type = "highpass";
+        filter.frequency.value = 1600;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.5, now);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        noise.start(now);
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(2200, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.03);
+        oscGain.gain.setValueAtTime(0.0001, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.16, now + 0.003);
+        oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.038);
+        osc.connect(oscGain);
+        oscGain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } catch (_) { /* ignore */ }
+    }
+    function playWinSound() {
+      try {
+        const ctx = ensureAudio();
+        const now = ctx.currentTime;
+        const step = 0.086;
+        const notes = 16;
+        const totalDur = 1.5;
+        const master = ctx.createGain();
+        master.gain.setValueAtTime(0.0001, now);
+        master.gain.exponentialRampToValueAtTime(1.35, now + 0.01);
+        master.gain.exponentialRampToValueAtTime(0.0001, now + totalDur);
+        master.connect(ctx.destination);
+        const freqs = [740, 880, 1108.73, 1320, 1760, 2217.46];
+        for (let i = 0; i < notes; i += 1) {
+          const t0 = now + i * step;
+          const t1 = Math.min(now + totalDur, t0 + step * 0.9);
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(freqs[i % freqs.length], t0);
+          gain.gain.setValueAtTime(0.0001, t0);
+          gain.gain.exponentialRampToValueAtTime(0.85, t0 + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t1);
+          osc.connect(gain);
+          gain.connect(master);
+          osc.start(t0);
+          osc.stop(t1 + 0.02);
+        }
+      } catch (_) { /* ignore */ }
+    }
+    function playLoseSound() {
+      try {
+        const ctx = ensureAudio();
+        const now = ctx.currentTime;
+        [392, 349.23, 311.13, 246.94].forEach((freq, index) => {
+          const t0 = now + index * 0.17;
+          const osc = ctx.createOscillator();
+          const filter = ctx.createBiquadFilter();
+          const gain = ctx.createGain();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(freq, t0);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.84, t0 + 0.15);
+          filter.type = "lowpass";
+          filter.frequency.setValueAtTime(1200, t0);
+          gain.gain.setValueAtTime(0.0001, t0);
+          gain.gain.exponentialRampToValueAtTime(0.2, t0 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t0);
+          osc.stop(t0 + 0.22);
+        });
+      } catch (_) { /* ignore */ }
+    }
+    function cardValue(rank) {
+      if (rank === "A") return 11;
+      if (rank === "K" || rank === "Q" || rank === "J") return 10;
+      return Number(rank);
+    }
+    function handTotal(cards) {
+      let total = 0;
+      let aces = 0;
+      for (const card of cards) {
+        total += cardValue(card.rank);
+        if (card.rank === "A") aces += 1;
+      }
+      while (total > 21 && aces > 0) {
+        total -= 10;
+        aces -= 1;
+      }
+      return total;
+    }
+    function isBlackjack(cards) {
+      return cards.length === 2 && handTotal(cards) === 21;
+    }
+    function makeDeck() {
+      const cards = [];
+      for (const suit of SUITS) {
+        for (const rank of RANKS) {
+          cards.push({ rank, sym: suit.sym, red: suit.red });
+        }
+      }
+      for (let i = cards.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+      return cards;
+    }
+    function draw() {
+      if (deck.length < 10) deck = makeDeck();
+      return deck.pop();
+    }
+
+    function snackImg(chip) {
+      const img = document.createElement("img");
+      img.className = "snack";
+      img.alt = "";
+      img.src = chip.file;
+      img.style.setProperty("--x", chip.x);
+      img.style.setProperty("--y", chip.y);
+      img.style.setProperty("--zoom", chip.zoom);
+      return img;
+    }
+    function chipByValue(value) {
+      return CHIPS.find((chip) => chip.value === value);
+    }
+
+    function faceHTML(card) {
+      const ten = card.rank === "10" ? " ten" : "";
+      const corners =
+        `<div class="corner tl${ten}"><b>${card.rank}</b><i>${card.sym}</i></div>` +
+        `<div class="corner br${ten}"><b>${card.rank}</b><i>${card.sym}</i></div>`;
+      if (card.rank === "A") {
+        return `${corners}<img class="ace-mark" src="${encodeURI(ACE_SRC)}" alt="" />`;
+      }
+      if (FACE_SRC[card.rank]) {
+        const face = FACE_POS[card.rank];
+        return `${corners}<div class="portrait"><img src="${encodeURI(FACE_SRC[card.rank])}" alt="" style="object-position:${face.pos};transform:scale(${face.scale});transform-origin:${face.pos}" /></div>`;
+      }
+      const pips = (PIPS[card.rank] || [])
+        .map(([x, y, flip]) => `<span class="pip${flip ? " flip" : ""}" style="left:${x}%;top:${y}%">${card.sym}</span>`)
+        .join("");
+      return `${corners}<div class="pips">${pips}</div>`;
+    }
+    function createCardEl(card, faceDown) {
+      const el = document.createElement("div");
+      el.className = "card" + (card.red ? " red" : "") + (faceDown ? " face-down" : "");
+      el.innerHTML =
+        `<div class="card-inner">` +
+          `<div class="face">${faceHTML(card)}</div>` +
+          `<div class="back"><img src="${encodeURI(ACE_SRC)}" alt="" /></div>` +
+        `</div>`;
+      return el;
+    }
+    function layoutCards(box) {
+      const cards = [...box.children];
+      const n = cards.length;
+      const cardW = cards[0] ? cards[0].offsetWidth || 68 : 68;
+      const available = box.clientWidth || 300;
+      let overlap = 0;
+      if (n > 1) {
+        const need = n * cardW;
+        overlap = need > available ? Math.min(42, Math.ceil((need - available) / (n - 1)) + 4) : (n > 3 ? 14 : 6);
+      }
+      cards.forEach((el, i) => {
+        el.style.marginLeft = i === 0 ? "0" : `-${overlap}px`;
+        el.style.zIndex = String(i + 1);
+      });
+    }
+    function paintHand(who, cards) {
+      const box = $(who + "-cards");
+      const hideHole = who === "dealer" && holeHidden && cards.length > 1;
+      while (box.children.length > cards.length) box.removeChild(box.lastChild);
+      while (box.children.length < cards.length) {
+        const i = box.children.length;
+        const el = createCardEl(cards[i], hideHole && i === 1);
+        el.classList.add("deal");
+        box.appendChild(el);
+      }
+      if (!hideHole && box.children[1]) box.children[1].classList.remove("face-down");
+      layoutCards(box);
+      const score = $(who + "-score");
+      if (!cards.length) {
+        score.textContent = "";
+        score.classList.remove("bust");
+        return;
+      }
+      const shown = hideHole ? [cards[0]] : cards;
+      const total = handTotal(shown);
+      score.textContent = total > 21 ? total + " 버스트" : String(total);
+      score.classList.toggle("bust", total > 21);
+    }
+
+    function paintStack(stackEl, chips, bonus, compact) {
+      stackEl.innerHTML = "";
+      const all = chips.concat(bonus).slice(-6);
+      const size = compact ? 26 : 36;
+      all.forEach((value, index) => {
+        const chip = chipByValue(value);
+        const el = document.createElement("div");
+        const gap = all.length <= 3 ? (compact ? 16 : 26) : (compact ? 12 : 16);
+        const x = (index - (all.length - 1) / 2) * gap;
+        el.className = "stack-chip" + (index === all.length - 1 ? " pop" : "");
+        el.style.width = size + "px";
+        el.style.height = size + "px";
+        el.style.marginLeft = (-size / 2) + "px";
+        el.style.left = `calc(50% + ${x}px)`;
+        el.style.bottom = `${compact ? 16 : 22}px`;
+        el.style.zIndex = String(index + 1);
+        el.style.borderColor = chip.ring;
+        el.appendChild(snackImg(chip));
+        stackEl.appendChild(el);
+      });
+    }
+    function spotEl(pot) {
+      if (pot === "pair") return $("pair-spot");
+      if (pot === "insure") return $("insure-spot");
+      return betSpot;
+    }
+    function renderBet() {
+      paintStack(chipStack, betChips, bonusMain, false);
+      paintStack($("pair-spot").querySelector(".mini-stack"), pairChips, bonusPair, true);
+      paintStack($("insure-spot").querySelector(".mini-stack"), insureChips, bonusInsure, true);
+      $("bet-empty").hidden = betChips.length + bonusMain.length > 0;
+      $("bet-amount").textContent = won(bet + bonusMain.reduce((sum, value) => sum + value, 0));
+      $("pair-spot").hidden = hidePair;
+      $("insure-spot").hidden = !showInsure;
+      $("side-bets").hidden = hidePair && !showInsure;
+      $("pair-spot").querySelector(".spot-amt").textContent = won(pairBet + bonusPair.reduce((sum, value) => sum + value, 0));
+      $("insure-spot").querySelector(".spot-amt").textContent = insureLabel || won(insureBet + bonusInsure.reduce((sum, value) => sum + value, 0));
+      betSpot.classList.toggle("armed", bet > 0);
+      betSpot.classList.toggle("active", activePot === "main" && phase === "betting");
+      $("pair-spot").classList.toggle("active", activePot === "pair" && phase === "betting");
+      $("insure-spot").classList.toggle("active", phase === "insurance");
+      const done = $("bet-done");
+      done.disabled = phase === "insurance" ? busy : bet <= 0 || busy || phase !== "betting";
+      for (const button of document.querySelectorAll(".chip")) {
+        const value = Number(button.dataset.value);
+        const open = phase === "betting" || phase === "insurance";
+        button.disabled = !open || fundsLeft() < value;
+      }
+    }
+    function renderChrome() {
+      $("bank").textContent = won(bank);
+      messageEl.hidden = Boolean(toast);
+      const toastEl = $("toast");
+      if (!toast) {
+        toastEl.hidden = true;
+      } else {
+        toastEl.hidden = false;
+        toastEl.className = toast.kind;
+        $("toast-title").textContent = toast.title;
+        $("toast-sub").textContent = toast.sub;
+      }
+      $("reset-btn").hidden = phase !== "betting";
+      paintHand("dealer", dealer);
+      paintHand("player", player);
+      renderBet();
+      renderActions();
+    }
+    function renderActions() {
+      actionBar.innerHTML = "";
+      const add = (label, onClick, primary, disabled) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        if (primary) button.className = "primary";
+        button.disabled = Boolean(disabled);
+        button.addEventListener("click", onClick);
+        actionBar.appendChild(button);
+      };
+      if (phase === "betting") {
+        if (bank < 100 && committed() === 0) add("5만원 다시 받기", refill, true, busy);
+        else add(sheetOpen ? "베팅 닫기" : "베팅하기", toggleSheet, true, busy);
+      } else if (phase === "insurance") {
+        add("인슈어런스", openInsuranceSheet, true, busy);
+      } else if (phase === "player") {
+        add("히트", () => playerHit(), false, busy);
+        add("스탠드", () => playerStand(), false, busy);
+        add("더블", () => playerDouble(), false, busy || player.length !== 2 || bank < bet);
+      } else if (phase === "result") {
+        add("다음 판", nextRound, true, busy);
+      } else {
+        add("카드 나누는 중", () => {}, true, true);
+      }
+    }
+
+    function setMessage(text) {
+      toast = null;
+      messageEl.textContent = text;
+    }
+    function showToast(kind, title, sub) {
+      toast = { kind, title, sub };
+      renderChrome();
+    }
+    function toggleSheet() {
+      sheetOpen = !sheetOpen;
+      sheet.classList.toggle("open", sheetOpen);
+      sheet.setAttribute("aria-hidden", sheetOpen ? "false" : "true");
+      if (sheetOpen && phase === "betting") setMessage("기본 또는 페어 칸에 간식을 올리세요. 페어는 11배");
+      if (sheetOpen && phase === "insurance") setMessage("인슈어런스는 기본 베팅의 절반까지예요");
+      renderChrome();
+    }
+    function closeSheet() {
+      if (!sheetOpen) return;
+      sheetOpen = false;
+      sheet.classList.remove("open");
+      sheet.setAttribute("aria-hidden", "true");
+    }
+    function potName(pot) {
+      if (pot === "pair") return "페어";
+      if (pot === "insure") return "인슈어런스";
+      return "기본";
+    }
+    function shakeChip(value) {
+      const button = document.querySelector(`.chip[data-value="${value}"]`);
+      if (!button) return;
+      button.classList.remove("shake");
+      void button.offsetWidth;
+      button.classList.add("shake");
+    }
+    function openInsuranceSheet() {
+      if (phase !== "insurance" || busy) return;
+      activePot = "insure";
+      if (!sheetOpen) {
+        sheetOpen = true;
+        sheet.classList.add("open");
+        sheet.setAttribute("aria-hidden", "false");
+      }
+      setMessage("인슈어런스는 기본 베팅의 절반까지 올릴 수 있어요");
+      renderChrome();
+    }
+    function placeChip(value, pot) {
+      const target = phase === "insurance" ? "insure" : (pot || activePot);
+      if (!canEditPot(target)) return;
+      if (fundsLeft() < value) {
+        setMessage("보유 금액이 부족해요");
+        shakeChip(value);
+        renderChrome();
+        return;
+      }
+      if (target === "insure" && insureBet + value > Math.floor(bet / 2)) {
+        setMessage("인슈어런스는 기본 베팅의 절반까지예요");
+        shakeChip(value);
+        renderChrome();
+        return;
+      }
+      if (target === "pair" && pairBet + value > bet) {
+        setMessage(bet <= 0 ? "기본 베팅을 먼저 올려 주세요" : "페어는 기본 베팅까지만 올릴 수 있어요");
+        shakeChip(value);
+        renderChrome();
+        return;
+      }
+      activePot = target;
+      setPotAmount(target, potAmount(target) + value);
+      potChips(target).push(value);
+      playChipSound();
+      setMessage(potName(target) + " " + won(potAmount(target)) + " · 같은 칸을 누르면 마지막 간식을 빼요");
+      renderChrome();
+    }
+    function removeLastChip(pot) {
+      const target = pot || activePot;
+      const chips = potChips(target);
+      if (!canEditPot(target)) return;
+      if (chips.length === 0) {
+        activePot = target;
+        renderChrome();
+        return;
+      }
+      const value = chips.pop();
+      setPotAmount(target, potAmount(target) - value);
+      activePot = target;
+      setMessage(potAmount(target) > 0 ? potName(target) + " " + won(potAmount(target)) : "간식을 탭하거나 칸으로 끌어오세요");
+      renderChrome();
+    }
+    function potFromPoint(x, y) {
+      const el = document.elementFromPoint(x, y);
+      const spot = el && el.closest("[data-pot]");
+      return spot ? spot.dataset.pot : null;
+    }
+    function clearHot() {
+      betSpot.classList.remove("hot");
+      $("pair-spot").classList.remove("hot");
+      $("insure-spot").classList.remove("hot");
+    }
+
+    function buildChips() {
+      const list = $("chip-list");
+      for (const chip of CHIPS) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "chip";
+        button.dataset.value = String(chip.value);
+        button.setAttribute("aria-label", `${chip.name} ${won(chip.value)} 베팅`);
+        const face = document.createElement("span");
+        face.className = "chip-face";
+        face.style.setProperty("--ring", chip.ring);
+        face.appendChild(snackImg(chip));
+        const name = document.createElement("small");
+        name.textContent = chip.name;
+        const price = document.createElement("b");
+        price.textContent = chip.value.toLocaleString("ko-KR");
+        button.append(face, name, price);
+        bindChipPointer(button, chip);
+        list.appendChild(button);
+      }
+    }
+    function bindChipPointer(button, chip) {
+      let drag = null;
+      const endDrag = () => {
+        if (drag && drag.ghost) drag.ghost.remove();
+        drag = null;
+        clearHot();
+      };
+      button.addEventListener("pointerdown", (event) => {
+        if (button.disabled || (phase !== "betting" && phase !== "insurance")) return;
+        event.preventDefault();
+        try { button.setPointerCapture(event.pointerId); } catch (_) { /* 합성 이벤트 */ }
+        const ghost = document.createElement("div");
+        ghost.className = "ghost-chip";
+        ghost.style.borderColor = chip.ring;
+        ghost.appendChild(snackImg(chip));
+        ghost.hidden = true;
+        document.body.appendChild(ghost);
+        drag = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false, ghost };
+      });
+      button.addEventListener("pointermove", (event) => {
+        if (!drag || event.pointerId !== drag.id) return;
+        const dx = event.clientX - drag.x;
+        const dy = event.clientY - drag.y;
+        if (!drag.moved && Math.hypot(dx, dy) < 8) return;
+        drag.moved = true;
+        drag.ghost.hidden = false;
+        drag.ghost.style.left = event.clientX + "px";
+        drag.ghost.style.top = event.clientY + "px";
+        const sheetTop = sheet.getBoundingClientRect().top;
+        clearHot();
+        const pot = potFromPoint(event.clientX, event.clientY);
+        let hover = pot || (event.clientY < sheetTop - 8 ? activePot : null);
+        if (phase === "insurance") hover = "insure";
+        if (phase === "betting" && hover === "insure") hover = activePot;
+        if (hover) spotEl(hover).classList.add("hot");
+      });
+      button.addEventListener("pointerup", (event) => {
+        if (!drag || event.pointerId !== drag.id) return;
+        const moved = drag.moved;
+        const sheetTop = sheet.getBoundingClientRect().top;
+        const pot = potFromPoint(event.clientX, event.clientY);
+        endDrag();
+        const dropped = !moved || event.clientY < sheetTop - 8;
+        const chosen = phase === "insurance" ? "insure" : (pot === "insure" ? activePot : (pot || activePot));
+        if (dropped) placeChip(chip.value, chosen);
+      });
+      button.addEventListener("pointercancel", endDrag);
+      button.addEventListener("contextmenu", (event) => event.preventDefault());
+    }
+
+    function visibleTotal(cards, hideHole) {
+      if (!cards.length) return 0;
+      return handTotal(hideHole ? [cards[0]] : cards);
+    }
+    function resultSub() {
+      const mine = handTotal(player);
+      const theirs = holeHidden ? visibleTotal(dealer, true) : handTotal(dealer);
+      return `나 ${mine} · 딜러 ${holeHidden ? theirs : theirs}`;
+    }
+    function breakIntoChips(amount) {
+      const chips = [];
+      let left = Math.max(0, Math.round(amount));
+      for (const value of [5000, 1000, 500, 100]) {
+        while (left >= value && chips.length < 8) {
+          chips.push(value);
+          left -= value;
+        }
+      }
+      return chips;
+    }
+    function bonusList(pot) {
+      if (pot === "pair") return bonusPair;
+      if (pot === "insure") return bonusInsure;
+      return bonusMain;
+    }
+    async function flyPayout(pot, chips) {
+      const spot = spotEl(pot);
+      const app = $("app");
+      const from = $("dealer-cards").getBoundingClientRect();
+      const appBox = app.getBoundingClientRect();
+      const flying = chips.slice(0, 6);
+      for (const value of flying) {
+        const chip = chipByValue(value);
+        const el = document.createElement("div");
+        el.className = "stack-chip flyer";
+        el.style.borderColor = chip.ring;
+        el.style.left = (from.left - appBox.left + from.width / 2 - 18) + "px";
+        el.style.top = (from.top - appBox.top + from.height / 2 - 8) + "px";
+        el.appendChild(snackImg(chip));
+        app.appendChild(el);
+        const to = spot.getBoundingClientRect();
+        const dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+        const dy = (to.top + to.height / 2) - (from.top + from.height / 2);
+        el.animate(
+          [
+            { transform: "translate(0,0) scale(.85)" },
+            { transform: `translate(${dx}px, ${dy}px) scale(1)` },
+          ],
+          { duration: 380, easing: "cubic-bezier(.2,.7,.2,1)", fill: "forwards" }
+        );
+        playChipSound();
+        await sleep(120);
+        el.remove();
+        bonusList(pot).push(value);
+        renderBet();
+      }
+      const rest = chips.slice(6);
+      if (rest.length) {
+        bonusList(pot).push(...rest);
+        renderBet();
+      }
+    }
+    async function settlePair() {
+      const matched = player.length >= 2 && player[0].rank === player[1].rank;
+      if (!matched || pairBet <= 0) {
+        hidePair = true;
+        if (!matched && pairBet > 0) sideNotes.push("페어 -" + pairBet.toLocaleString("ko-KR") + "원");
+        renderChrome();
+        return;
+      }
+      const profit = pairBet * 11;
+      bank += pairBet + profit;
+      sideNotes.push("페어 +" + profit.toLocaleString("ko-KR") + "원");
+      setMessage("페어! +" + profit.toLocaleString("ko-KR") + "원");
+      renderChrome();
+      await flyPayout("pair", breakIntoChips(profit));
+    }
+    async function settleInsurance() {
+      if (insureBet <= 0 || !isBlackjack(dealer)) {
+        if (insureBet > 0) sideNotes.push("인슈어런스 -" + insureBet.toLocaleString("ko-KR") + "원");
+        return;
+      }
+      const profit = insureBet * 2;
+      bank += insureBet + profit;
+      sideNotes.push("인슈어런스 +" + profit.toLocaleString("ko-KR") + "원");
+      setMessage("인슈어런스! +" + profit.toLocaleString("ko-KR") + "원");
+      renderChrome();
+      await flyPayout("insure", breakIntoChips(profit));
+    }
+    async function continueHand() {
+      if (showInsure) await settleInsurance();
+      const playerBJ = isBlackjack(player);
+      const dealerBJ = isBlackjack(dealer);
+      if (playerBJ || dealerBJ) {
+        holeHidden = false;
+        renderChrome();
+        await sleep(360);
+        if (playerBJ && dealerBJ) await finish("push");
+        else if (playerBJ) await finish("blackjack");
+        else await finish("lose");
+      } else {
+        phase = "player";
+        const side = sideNotes.length ? sideNotes.join(" · ") + " · " : "";
+        setMessage(side + "히트, 스탠드, 더블 중 골라 주세요");
+        renderChrome();
+      }
+    }
+    async function confirmInsurance() {
+      if (phase !== "insurance" || busy) return;
+      if (insureBet > Math.floor(bet / 2)) {
+        setMessage("인슈어런스는 기본 베팅의 절반까지예요");
+        renderChrome();
+        return;
+      }
+      if (insureBet > bank) {
+        setMessage("보유 금액이 부족해요");
+        renderChrome();
+        return;
+      }
+      busy = true;
+      bank -= insureBet;
+      closeSheet();
+      if (insureBet === 0) showInsure = false;
+      renderChrome();
+      await continueHand();
+      busy = false;
+      renderChrome();
+    }
+    async function finish(kind) {
+      let title = "";
+      let toastKind = "lose";
+      let mainWin = false;
+      if (kind === "blackjack") {
+        const bonus = Math.round(bet * 1.5);
+        bank += bet + bonus;
+        title = `블랙잭! +${bonus.toLocaleString("ko-KR")}원`;
+        toastKind = "win";
+        mainWin = true;
+      } else if (kind === "win" || kind === "dealerBust") {
+        bank += bet * 2;
+        title = (kind === "dealerBust" ? "딜러 버스트 · " : "") + `이겼어요 +${bet.toLocaleString("ko-KR")}원`;
+        toastKind = "win";
+        mainWin = true;
+      } else if (kind === "push") {
+        bank += bet;
+        title = "무승부";
+        toastKind = "push";
+      } else {
+        title = (kind === "bust" ? "버스트 · " : "") + `졌어요 -${bet.toLocaleString("ko-KR")}원`;
+        toastKind = "lose";
+      }
+      saveBank();
+      phase = "result";
+      closeSheet();
+      const dealerLabel = holeHidden ? "비공개" : String(handTotal(dealer));
+      const extra = sideNotes.length ? " · " + sideNotes.join(" · ") : "";
+      showToast(toastKind, title, `나 ${handTotal(player)} · 딜러 ${dealerLabel}${extra}`);
+      if (mainWin) {
+        playWinSound();
+        await flyPayout("main", betChips.slice());
+      } else if (toastKind === "lose") {
+        playLoseSound();
+      }
+    }
+    async function dealerTurn() {
+      phase = "dealer";
+      holeHidden = false;
+      renderChrome();
+      await sleep(420);
+      while (handTotal(dealer) < 17) {
+        dealer.push(draw());
+        renderChrome();
+        await sleep(460);
+      }
+      const mine = handTotal(player);
+      const theirs = handTotal(dealer);
+      if (theirs > 21) await finish("dealerBust");
+      else if (mine > theirs) await finish("win");
+      else if (mine < theirs) await finish("lose");
+      else await finish("push");
+    }
+    async function openDeal() {
+      const wager = committed();
+      if (busy || phase !== "betting" || bet <= 0 || wager > bank) return;
+      busy = true;
+      bank -= wager;
+      sideNotes = [];
+      insureLabel = "";
+      insureBet = 0;
+      insureChips = [];
+      hidePair = false;
+      showInsure = false;
+      bonusMain = [];
+      bonusPair = [];
+      bonusInsure = [];
+      closeSheet();
+      toast = null;
+      player = [];
+      dealer = [];
+      holeHidden = true;
+      phase = "dealing";
+      $("dealer-cards").innerHTML = "";
+      $("player-cards").innerHTML = "";
+      setMessage("카드를 나누는 중");
+      renderChrome();
+      const order = [
+        ["player", false],
+        ["dealer", false],
+        ["player", false],
+        ["dealer", true],
+      ];
+      for (const [who, down] of order) {
+        const card = draw();
+        if (who === "player") player.push(card);
+        else dealer.push(card);
+        if (down) holeHidden = true;
+        renderChrome();
+        await sleep(280);
+      }
+      await settlePair();
+      if (dealer[0].rank === "A") {
+        phase = "insurance";
+        showInsure = true;
+        activePot = "insure";
+        setMessage("딜러가 A예요. 인슈어런스를 눌러 베팅하세요");
+        busy = false;
+        renderChrome();
+        return;
+      }
+      await continueHand();
+      busy = false;
+      renderChrome();
+    }
+    async function playerHit() {
+      if (busy || phase !== "player") return;
+      busy = true;
+      player.push(draw());
+      const total = handTotal(player);
+      renderChrome();
+      if (total > 21) {
+        holeHidden = false;
+        renderChrome();
+        await sleep(420);
+        await finish("bust");
+      } else if (total === 21) {
+        setMessage("21이에요");
+        renderChrome();
+        await sleep(280);
+        await dealerTurn();
+      } else {
+        setMessage("히트, 스탠드 중 골라 주세요");
+        renderChrome();
+      }
+      busy = false;
+      renderChrome();
+    }
+    async function playerStand() {
+      if (busy || phase !== "player") return;
+      busy = true;
+      await dealerTurn();
+      busy = false;
+      renderChrome();
+    }
+    async function playerDouble() {
+      if (busy || phase !== "player" || player.length !== 2 || bank < bet) return;
+      busy = true;
+      bank -= bet;
+      betChips = betChips.concat(betChips);
+      bet *= 2;
+      player.push(draw());
+      renderChrome();
+      await sleep(320);
+      if (handTotal(player) > 21) {
+        holeHidden = false;
+        renderChrome();
+        await sleep(420);
+        await finish("bust");
+      }
+      else await dealerTurn();
+      busy = false;
+      renderChrome();
+    }
+    function nextRound() {
+      if (busy) return;
+      player = [];
+      dealer = [];
+      bet = 0;
+      betChips = [];
+      pairBet = 0;
+      pairChips = [];
+      insureBet = 0;
+      insureChips = [];
+      bonusMain = [];
+      bonusPair = [];
+      bonusInsure = [];
+      insureLabel = "";
+      hidePair = false;
+      showInsure = false;
+      sideNotes = [];
+      activePot = "main";
+      holeHidden = true;
+      phase = "betting";
+      $("dealer-cards").innerHTML = "";
+      $("player-cards").innerHTML = "";
+      setMessage(bank < 100 ? "간식비가 떨어졌어요" : "베팅하기를 눌러 간식을 올려 주세요");
+      renderChrome();
+    }
+    function refill() {
+      bank = START_BANK;
+      saveBank();
+      setMessage("5만원을 다시 채웠어요");
+      renderChrome();
+    }
+
+    $("bet-done").addEventListener("click", () => {
+      if (phase === "insurance") {
+        confirmInsurance();
+        return;
+      }
+      if (bet <= 0) {
+        setMessage("간식을 먼저 올려 주세요");
+        sheet.classList.remove("shake");
+        void sheet.offsetWidth;
+        sheet.classList.add("shake");
+        renderChrome();
+        return;
+      }
+      openDeal();
+    });
+    $("sheet-handle").addEventListener("click", () => {
+      if (sheetOpen) toggleSheet();
+    });
+    for (const spot of [betSpot, $("pair-spot"), $("insure-spot")]) {
+      spot.addEventListener("click", () => {
+        if (phase === "insurance" && spot.dataset.pot === "insure" && !sheetOpen) {
+          openInsuranceSheet();
+          return;
+        }
+        removeLastChip(spot.dataset.pot);
+      });
+    }
+    $("table").addEventListener("pointerdown", (event) => {
+      if (!sheetOpen || (phase !== "betting" && phase !== "insurance")) return;
+      if (event.target.closest("[data-pot]") || event.target.closest("#sheet")) return;
+      toggleSheet();
+    });
+    $("reset-btn").addEventListener("click", () => {
+      if (phase !== "betting" || busy) return;
+      if (!window.confirm("보유 금액을 5만원으로 되돌릴까요?")) return;
+      bank = START_BANK;
+      bet = 0;
+      betChips = [];
+      pairBet = 0;
+      pairChips = [];
+      insureBet = 0;
+      insureChips = [];
+      bonusMain = [];
+      bonusPair = [];
+      bonusInsure = [];
+      insureLabel = "";
+      hidePair = false;
+      showInsure = false;
+      activePot = "main";
+      saveBank();
+      setMessage("5만원으로 시작해요");
+      renderChrome();
+    });
+    window.addEventListener("resize", () => {
+      layoutCards($("dealer-cards"));
+      layoutCards($("player-cards"));
+    });
+
+    buildChips();
+    setMessage("베팅하기를 눌러 간식을 올려 주세요");
+    renderChrome();
+  </script>
+</body>
+</html>
