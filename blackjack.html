@@ -174,6 +174,7 @@
       height: calc(192px * var(--card-scale, 1));
       flex: none;
       position: relative;
+      perspective: 1000px;
       filter: drop-shadow(0 6px 8px rgba(0,0,0,.28));
     }
     .card-inner {
@@ -195,13 +196,17 @@
       background: #fffef8;
       color: #1a1a1a;
       overflow: hidden;
+      transform: translateZ(1px);
+    }
+    .card.face-down .face {
+      visibility: hidden;
     }
     .card.red .face { color: #d31232; }
     .back {
       background:
         radial-gradient(circle at 50% 46%, #fff 0 16px, transparent 17px),
         repeating-linear-gradient(45deg, #d32f2f 0 7px, #8e1515 7px 14px);
-      transform: rotateY(180deg);
+      transform: rotateY(180deg) translateZ(1px);
       border: 4px solid rgba(255,255,255,.75);
     }
     .back img {
