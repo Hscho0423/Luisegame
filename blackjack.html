@@ -89,6 +89,67 @@
       font-size: 14px;
       font-weight: 750;
     }
+    #history-btn {
+      flex: none;
+      align-self: center;
+      border: 0;
+      border-radius: 14px;
+      background: #ffe08a;
+      color: #3d2b00;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 10px 10px;
+      white-space: nowrap;
+    }
+    #history {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      background: #f6f1e8;
+      color: #1c2a22;
+    }
+    #history[hidden] { display: none; }
+    .history-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: calc(12px + env(safe-area-inset-top)) 14px 10px;
+    }
+    .history-head h2 { margin: 0; font-size: 20px; }
+    #history-close {
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 12px;
+      background: #efe6dc;
+      color: #1c2a22;
+      font-size: 26px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    #history-list {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 0 14px calc(16px + env(safe-area-inset-bottom));
+    }
+    .history-empty { margin: 28px 0; font-size: 16px; opacity: .7; }
+    .history-item {
+      border: 1px solid #e4d8c8;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .history-item h3 { margin: 0 0 6px; font-size: 15px; }
+    .history-item p { margin: 3px 0; font-size: 16px; }
+    .history-item .win { color: #145c38; }
+    .history-item .lose { color: #a32020; }
+    .history-item .push { color: #3d4a55; }
     #code-btn {
       margin-top: 2px;
       border: 0;
@@ -707,6 +768,7 @@
         <strong id="bank">$500</strong>
         <button type="button" id="code-btn">코드입력</button>
       </div>
+      <button type="button" id="history-btn">최근기록</button>
     </header>
 
     <main id="table">
@@ -768,6 +830,13 @@
       </form>
       <p id="code-msg"></p>
     </div>
+    <div id="history" hidden>
+      <div class="history-head">
+        <h2>최근 기록</h2>
+        <button type="button" id="history-close" aria-label="닫기">×</button>
+      </div>
+      <div id="history-list"></div>
+    </div>
     <div id="sheet" class="sheet open" aria-hidden="false">
       <button type="button" class="handle" id="sheet-handle" aria-label="베팅 창 닫기"></button>
       <div class="sheet-row">
@@ -779,6 +848,7 @@
 
   <script>
     const BANK_KEY = "luise-blackjack-bank-v3";
+    const HISTORY_KEY = "luise-blackjack-history-v1";
     const CODE_AMOUNTS = {
       L260123: 100,
       M020521: 500,
@@ -858,6 +928,7 @@
     let toast = null;
     let placedAt = 0;
     let bannerTimer = 0;
+    let history = loadHistory();
 
     function loadBank() {
       const raw = localStorage.getItem(BANK_KEY);
@@ -868,6 +939,77 @@
     }
     function saveBank() {
       localStorage.setItem(BANK_KEY, String(bank));
+    }
+    function loadHistory() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+        return Array.isArray(raw) ? raw.slice(-10) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+    function saveHistory() {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-10)));
+    }
+    function mainNet(outcomes) {
+      return outcomes.reduce((sum, outcome, index) => {
+        if (outcome.kind === "lose" || outcome.kind === "bust") return sum - hands[index].bet;
+        if (outcome.kind === "push") return sum;
+        return sum + outcome.profit;
+      }, 0);
+    }
+    function recordRound(outcomes) {
+      const net = mainNet(outcomes);
+      const delta = bank - bankBeforeRound;
+      history.push({
+        bet: hands.reduce((sum, hand) => sum + hand.bet, 0),
+        hands: hands.map((hand) => hand.bet),
+        pair: pairBet,
+        insure: insureBet,
+        dealer: handTotal(dealer),
+        player: hands.map((hand) => handTotal(hand.cards)),
+        result: net > 0 ? "승" : net < 0 ? "패" : "무승부",
+        delta,
+        bank,
+      });
+      history = history.slice(-10);
+      saveHistory();
+    }
+    function renderHistory() {
+      const list = $("history-list");
+      if (!history.length) {
+        list.innerHTML = `<p class="history-empty">아직 끝난 판이 없어요</p>`;
+        return;
+      }
+      list.innerHTML = history.map((row, index) => {
+        const bets = ["베팅 " + money(row.bet)];
+        if (row.hands && row.hands.length > 1) {
+          bets[0] += " (" + row.hands.map((amount, i) => (i + 1) + "번 " + money(amount)).join(" · ") + ")";
+        }
+        if (row.pair) bets.push("페어 " + money(row.pair));
+        if (row.insure) bets.push("인슈어런스 " + money(row.insure));
+        const player = row.player.length > 1
+          ? row.player.map((total, i) => (i + 1) + "번 " + total).join(" · ")
+          : String(row.player[0]);
+        const delta = row.delta > 0 ? "+" + money(row.delta) : row.delta < 0 ? money(row.delta) : "±$0";
+        const tone = row.result === "승" ? "win" : row.result === "패" ? "lose" : "push";
+        return `<article class="history-item">
+          <h3>${index + 1}번째</h3>
+          <p>${bets.join(" · ")}</p>
+          <p>딜러 합 ${row.dealer}</p>
+          <p>플레이어 합 ${player}</p>
+          <p>결과 <b class="${tone}">${row.result}</b></p>
+          <p>베팅 결과 ${delta}</p>
+          <p>보유 ${money(row.bank)}</p>
+        </article>`;
+      }).join("");
+    }
+    function openHistory() {
+      renderHistory();
+      $("history").hidden = false;
+    }
+    function closeHistory() {
+      $("history").hidden = true;
     }
     function money(n) {
       return "$" + Math.round(n).toLocaleString("en-US");
@@ -1238,7 +1380,7 @@
     function canSplit(index) {
       const hand = hands[index];
       if (!hand || hand.done || hand.cards.length !== 2) return false;
-      if (hand.cards[0].rank !== hand.cards[1].rank) return false;
+      if (cardValue(hand.cards[0].rank) !== cardValue(hand.cards[1].rank)) return false;
       if (hands.length >= MAX_HANDS) return false;
       return bank >= hand.bet;
     }
@@ -1366,7 +1508,7 @@
         add("히트", () => playerHit(), false, busy);
         add("스탠드", () => playerStand(), false, busy);
         add("더블", () => playerDouble(), false, busy || !hand || hand.cards.length !== 2 || bank < hand.bet);
-        if (canSplit(active) || (hand && hand.cards.length === 2 && hand.cards[0].rank === hand.cards[1].rank && hands.length < MAX_HANDS)) {
+        if (canSplit(active) || (hand && hand.cards.length === 2 && !hand.done && cardValue(hand.cards[0].rank) === cardValue(hand.cards[1].rank) && hands.length < MAX_HANDS)) {
           add("스플릿", () => playerSplit(), false, busy || !canSplit(active));
         }
       } else if (phase === "result") {
@@ -1676,9 +1818,11 @@
         if (outcome.profit > 0) payouts.push({ index, chips: hands[index].chips.slice() });
       });
       saveBank();
+      recordRound(outcomes);
       phase = "result";
       closeSheet();
       const delta = bank - bankBeforeRound;
+      const net = mainNet(outcomes);
       const allBust = outcomes.every((outcome) => outcome.kind === "bust");
       const playerBJ = outcomes.some((outcome) => outcome.kind === "blackjack");
       const dealerBust = handTotal(dealer) > 21 && outcomes.some((outcome) => outcome.kind !== "bust");
@@ -1686,11 +1830,11 @@
       let title = "무승부";
       let sub = "";
       let sound = "none";
-      if (delta > 0) {
+      if (net > 0) {
         tone = "win";
         title = "플레이어 WIN!";
         sound = playerBJ && !dealerBJ ? "playerBJ" : "win";
-      } else if (delta < 0) {
+      } else if (net < 0) {
         tone = "lose";
         title = "플레이어 LOSE";
         sound = dealerBJ && !playerBJ ? "dealerBJ" : "lose";
@@ -1700,7 +1844,7 @@
       else if (playerBJ) sub = "플레이어 블랙잭!";
       else if (dealerBJ) sub = "딜러 블랙잭!";
       else if (dealerBust) sub = "딜러 버스트";
-      const detail = delta > 0 ? "+" + money(delta) : delta < 0 ? money(delta) : "±$0";
+      const detail = delta > 0 ? "+" + money(delta) : delta < 0 ? money(delta) : "무승부";
       const extra = sideNotes.length ? " · " + sideNotes.join(" · ") : "";
       showBanner(tone, title, sub);
       toast = null;
@@ -1885,7 +2029,7 @@
       await dealTo(active);
       await dealTo(active + 1);
       if (handTotal(hands[active].cards) >= 21) await advance();
-      else setMessage("스플릿했어요. 같은 숫자면 한 번 더 나눌 수 있어요");
+      else setMessage("스플릿했어요. 같은 값이면 한 번 더 나눌 수 있어요");
       busy = false;
       renderChrome();
     }
@@ -1990,6 +2134,8 @@
       if (event.target.closest("[data-pot]") || event.target.closest("#sheet")) return;
       toggleSheet();
     });
+    $("history-btn").addEventListener("click", openHistory);
+    $("history-close").addEventListener("click", closeHistory);
     $("code-btn").addEventListener("click", () => {
       if ($("code-box").hidden) openCodeBox();
       else closeCodeBox();
