@@ -106,6 +106,7 @@
       display: flex;
       flex-direction: column;
       padding: 4px 12px 8px;
+      --card-scale: 1;
     }
     .hand-meta {
       display: flex;
@@ -116,17 +117,18 @@
       text-shadow: 0 1px 2px rgba(0,0,0,.25);
     }
     .hand-meta b { font-weight: 700; }
+    .score { font-size: 26px; font-weight: 800; }
     .score.bust { color: #ffd0d0; }
     .cards {
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 96px;
+      min-height: calc(192px * var(--card-scale, 1));
       width: 100%;
     }
     .card {
-      width: 68px;
-      height: 96px;
+      width: calc(136px * var(--card-scale, 1));
+      height: calc(192px * var(--card-scale, 1));
       flex: none;
       position: relative;
       filter: drop-shadow(0 6px 8px rgba(0,0,0,.28));
@@ -142,7 +144,7 @@
     .face, .back {
       position: absolute;
       inset: 0;
-      border-radius: 8px;
+      border-radius: 16px;
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
     }
@@ -154,17 +156,17 @@
     .card.red .face { color: #d31232; }
     .back {
       background:
-        radial-gradient(circle at 50% 46%, #f4fff8 0 16px, transparent 17px),
-        repeating-linear-gradient(45deg, #157a4e 0 7px, #0e6842 7px 14px);
+        radial-gradient(circle at 50% 46%, #fff 0 16px, transparent 17px),
+        repeating-linear-gradient(45deg, #d32f2f 0 7px, #8e1515 7px 14px);
       transform: rotateY(180deg);
-      border: 2px solid rgba(255,255,255,.45);
+      border: 4px solid rgba(255,255,255,.75);
     }
     .back img {
       position: absolute;
       left: 50%;
       top: 46%;
-      width: 34px;
-      height: 34px;
+      width: calc(68px * var(--card-scale, 1));
+      height: calc(68px * var(--card-scale, 1));
       transform: translate(-50%, -50%);
       border-radius: 50%;
       object-fit: cover;
@@ -178,26 +180,26 @@
       line-height: 1;
       font-weight: 800;
     }
-    .corner b { font-size: 13px; }
-    .corner.ten b { font-size: 11px; letter-spacing: -0.04em; }
-    .corner i { font-style: normal; font-size: 11px; }
-    .corner.tl { top: 4px; left: 4px; }
-    .corner.br { bottom: 4px; right: 4px; transform: rotate(180deg); }
-    .pips { position: absolute; inset: 16px 8px; }
+    .corner b { font-size: calc(26px * var(--card-scale, 1)); }
+    .corner.ten b { font-size: calc(22px * var(--card-scale, 1)); letter-spacing: -0.04em; }
+    .corner i { font-style: normal; font-size: calc(22px * var(--card-scale, 1)); }
+    .corner.tl { top: calc(8px * var(--card-scale, 1)); left: calc(8px * var(--card-scale, 1)); }
+    .corner.br { bottom: calc(8px * var(--card-scale, 1)); right: calc(8px * var(--card-scale, 1)); transform: rotate(180deg); }
+    .pips { position: absolute; inset: calc(32px * var(--card-scale, 1)) calc(16px * var(--card-scale, 1)); }
     .pip {
       position: absolute;
       transform: translate(-50%, -50%);
-      font-size: 13px;
+      font-size: calc(26px * var(--card-scale, 1));
       line-height: 1;
     }
     .pip.flip { transform: translate(-50%, -50%) rotate(180deg); }
     .portrait {
       position: absolute;
-      left: 6px;
-      right: 6px;
-      top: 16px;
-      bottom: 16px;
-      border-radius: 5px;
+      left: calc(12px * var(--card-scale, 1));
+      right: calc(12px * var(--card-scale, 1));
+      top: calc(32px * var(--card-scale, 1));
+      bottom: calc(32px * var(--card-scale, 1));
+      border-radius: 10px;
       overflow: hidden;
       background: #efe8dc;
     }
@@ -363,6 +365,7 @@
       gap: 8px;
       padding: 8px 12px calc(10px + env(safe-area-inset-bottom));
     }
+    #action-bar:empty { display: none; }
     #action-bar button, #bet-done {
       border: 0;
       border-radius: 14px;
@@ -505,14 +508,109 @@
       25% { transform: translate(-5px, 0); }
       75% { transform: translate(5px, 0); }
     }
+    #banner {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 12px;
+      text-align: center;
+      pointer-events: none;
+      font-weight: 900;
+      line-height: 1.05;
+      text-shadow: 0 3px 0 rgba(0,0,0,.28);
+    }
+    #banner[hidden] { display: none; }
+    #banner strong, #banner span { font-size: 50px; }
+    #banner.win { color: #2f6bff; }
+    #banner.lose { color: #ff2d2d; }
+    #banner.push { color: #fff; }
+    #player-zone { width: 100%; }
+    #player-hands {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 4px;
+      width: 100%;
+      min-height: calc(220px * var(--card-scale, 1));
+    }
+    .player-hand { flex: 1; min-width: 0; }
+    .player-hand .hand-meta { justify-content: center; gap: 8px; }
+    .player-hand .score { font-size: max(14px, calc(26px * var(--card-scale, 1))); }
+    .player-hand.active .cards { filter: drop-shadow(0 0 8px rgba(255,224,138,.9)); }
+    #main-spots {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+    #main-spots button {
+      flex: 1;
+      max-width: 220px;
+      min-height: 96px;
+      border-radius: 18px;
+      border: 2px dashed rgba(255,255,255,.45);
+      background: rgba(0,0,0,.12);
+      position: relative;
+      color: inherit;
+      font: inherit;
+      padding: 0;
+    }
+    #main-spots[data-mode="multi"] button { max-width: none; min-height: 74px; }
+    #main-spots button.armed {
+      border-style: solid;
+      border-color: rgba(255,236,170,.85);
+      background: rgba(255,255,255,.08);
+    }
+    #main-spots button.active {
+      border-style: solid;
+      border-color: #ffe08a;
+      box-shadow: 0 0 0 3px rgba(255,224,138,.28);
+    }
+    #main-spots button.hot {
+      border-color: #ffe08a;
+      box-shadow: 0 0 0 4px rgba(255,224,138,.35);
+      background: rgba(255,224,138,.16);
+    }
+    #main-spots button.locked { pointer-events: none; }
+    #main-spots .spot-name { top: 4px; }
+    #main-spots .mini-stack, #main-spots .bet-empty, #main-spots .spot-amt { pointer-events: none; }
+    .bet-empty {
+      position: absolute;
+      inset: 18px 8px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.35;
+      opacity: .88;
+    }
+    .bet-empty[hidden] { display: none; }
+    #main-spots .spot-amt {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 6px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 750;
+      text-shadow: 0 1px 2px rgba(0,0,0,.35);
+    }
     @media (max-width: 360px) {
-      .card { width: 58px; height: 82px; }
+      .card { width: calc(116px * var(--card-scale, 1)); height: calc(164px * var(--card-scale, 1)); }
+      .cards { min-height: calc(164px * var(--card-scale, 1)); }
       .chip-face { width: 46px; height: 46px; }
-      .pip { font-size: 11px; }
+      .pip { font-size: calc(22px * var(--card-scale, 1)); }
+      .score { font-size: 22px; }
     }
     @media (max-height: 680px) {
-      .card { width: 56px; height: 80px; }
-      .cards { min-height: 82px; }
+      .card { width: calc(112px * var(--card-scale, 1)); height: calc(160px * var(--card-scale, 1)); }
+      .cards { min-height: calc(160px * var(--card-scale, 1)); }
       .side-spot { min-height: 64px; }
       #bet-spot { min-height: 84px; }
       .logo { width: 28px; height: 28px; }
@@ -532,8 +630,8 @@
       </div>
       <div id="bank-pill">
         <small>보유</small>
-        <strong id="bank">50,000원</strong>
-        <button type="button" id="reset-btn">5만으로</button>
+        <strong id="bank">$500</strong>
+        <button type="button" id="reset-btn">$500으로</button>
       </div>
     </header>
 
@@ -552,40 +650,43 @@
             <span class="spot-name">인슈어런스</span>
             <span class="spot-odds">2배 · A일 때</span>
             <div class="mini-stack"></div>
-            <span class="spot-amt">0원</span>
+            <span class="spot-amt">$0</span>
           </button>
           <button type="button" id="pair-spot" class="side-spot" data-pot="pair" aria-label="페어 베팅">
             <span class="spot-name">페어</span>
             <span class="spot-odds">11배</span>
             <div class="mini-stack"></div>
-            <span class="spot-amt">0원</span>
+            <span class="spot-amt">$0</span>
           </button>
         </div>
-        <button type="button" id="bet-spot" data-pot="main" aria-label="기본 베팅. 누르면 마지막 간식을 뺍니다.">
-          <span class="spot-name">기본</span>
-          <div id="chip-stack"></div>
-          <div id="bet-empty">간식을 탭하거나<br />여기로 끌어오세요</div>
-          <div id="bet-amount">0원</div>
-        </button>
-        <p id="message">베팅하기를 눌러 간식을 올려 주세요</p>
+        <div id="main-spots">
+          <button type="button" id="bet-spot" data-pot="main" data-hand="0" aria-label="기본 베팅. 누르면 마지막 칩을 뺍니다.">
+            <span class="spot-name">기본</span>
+            <div class="mini-stack"></div>
+            <div class="bet-empty">칩을 탭하거나<br />여기로 끌어오세요</div>
+            <div class="spot-amt">$0</div>
+          </button>
+        </div>
+        <p id="message">칩을 올려 주세요</p>
         <div id="toast" hidden>
           <strong id="toast-title"></strong>
           <span id="toast-sub"></span>
         </div>
       </section>
 
-      <section>
-        <div class="hand-meta">
-          <span>나</span>
-          <b id="player-score" class="score"></b>
-        </div>
-        <div id="player-cards" class="cards"></div>
+      <section id="player-zone">
+        <div id="player-hands"></div>
       </section>
     </main>
 
     <footer id="action-bar"></footer>
 
-    <div id="sheet" class="sheet" aria-hidden="true">
+    <div id="banner" hidden>
+      <strong id="banner-title"></strong>
+      <span id="banner-sub"></span>
+    </div>
+
+    <div id="sheet" class="sheet open" aria-hidden="false">
       <button type="button" class="handle" id="sheet-handle" aria-label="베팅 창 닫기"></button>
       <div class="sheet-row">
         <div class="chip-list" id="chip-list"></div>
@@ -595,8 +696,10 @@
   </div>
 
   <script>
-    const BANK_KEY = "luise-blackjack-bank-v1";
-    const START_BANK = 50000;
+    const BANK_KEY = "luise-blackjack-bank-v2";
+    const START_BANK = 500;
+    const DEAL_MS = 600;
+    const MAX_HANDS = 4;
     const FACE_SRC = {
       J: "./faces/luise-win-wave.png",
       Q: "./faces/luise-happy.png",
@@ -627,17 +730,15 @@
       10: [[28, 13], [72, 13], [50, 28], [28, 40], [72, 40], [28, 60], [72, 60], [50, 74, 1], [28, 87, 1], [72, 87, 1]],
     };
     const CHIPS = [
-      { value: 100, name: "사료", file: "./chips/kibble.jpg", x: "50%", y: "50%", zoom: "118%", ring: "#c4a574" },
-      { value: 500, name: "북어간식", file: "./chips/pollock.jpg", x: "50%", y: "50%", zoom: "148%", ring: "#d9d3c4" },
-      { value: 1000, name: "연어간식", file: "./chips/salmon.jpg", x: "50%", y: "50%", zoom: "155%", ring: "#e07a4a" },
-      { value: 5000, name: "고구마간식", file: "./chips/sweetpotato.jpg", x: "50%", y: "52%", zoom: "175%", ring: "#e0a04a" },
+      { value: 10, name: "사료", file: "./chips/kibble.jpg", x: "50%", y: "50%", zoom: "118%", ring: "#c4a574" },
+      { value: 25, name: "북어간식", file: "./chips/pollock.jpg", x: "50%", y: "50%", zoom: "148%", ring: "#d9d3c4" },
+      { value: 50, name: "연어간식", file: "./chips/salmon.jpg", x: "50%", y: "50%", zoom: "155%", ring: "#e07a4a" },
+      { value: 100, name: "고구마간식", file: "./chips/sweetpotato.jpg", x: "50%", y: "52%", zoom: "175%", ring: "#e0a04a" },
     ];
 
     const $ = (id) => document.getElementById(id);
     const actionBar = $("action-bar");
     const sheet = $("sheet");
-    const betSpot = $("bet-spot");
-    const chipStack = $("chip-stack");
     const messageEl = $("message");
 
     let bank = loadBank();
@@ -657,13 +758,17 @@
     let sideNotes = [];
     let audioCtx = null;
     let deck = [];
-    let player = [];
+    let hands = [];
+    let active = 0;
+    let baseBet = 0;
     let dealer = [];
     let phase = "betting";
     let holeHidden = true;
     let busy = false;
-    let sheetOpen = false;
+    let sheetOpen = true;
     let toast = null;
+    let placedAt = 0;
+    let bannerTimer = 0;
 
     function loadBank() {
       const raw = localStorage.getItem(BANK_KEY);
@@ -675,8 +780,8 @@
     function saveBank() {
       localStorage.setItem(BANK_KEY, String(bank));
     }
-    function won(n) {
-      return Math.round(n).toLocaleString("ko-KR") + "원";
+    function money(n) {
+      return "$" + Math.round(n).toLocaleString("en-US");
     }
     function sleep(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
@@ -805,6 +910,81 @@
         });
       } catch (_) { /* ignore */ }
     }
+    function noiseBurst(ctx, now, dur, amount, freq) {
+      const count = Math.max(1, Math.floor(ctx.sampleRate * dur));
+      const buffer = ctx.createBuffer(1, count, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < count; i += 1) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / count, 2);
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = freq;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(amount, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      src.start(now);
+    }
+    function playCardSlap() {
+      try {
+        const ctx = ensureAudio();
+        const now = ctx.currentTime;
+        noiseBurst(ctx, now, 0.045, 0.45, 2200);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(48, now + 0.08);
+        gain.gain.setValueAtTime(0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } catch (_) { /* ignore */ }
+    }
+    function playBang() {
+      try {
+        const ctx = ensureAudio();
+        const now = ctx.currentTime;
+        noiseBurst(ctx, now, 0.38, 0.8, 420);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(28, now + 0.32);
+        gain.gain.setValueAtTime(0.85, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.38);
+      } catch (_) { /* ignore */ }
+    }
+    function playFireworks() {
+      try {
+        const ctx = ensureAudio();
+        const now = ctx.currentTime;
+        for (let i = 0; i < 6; i += 1) {
+          const t = now + i * 0.055;
+          noiseBurst(ctx, t, 0.11, 0.32, 2800 + i * 380);
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(880 + i * 160, t);
+          osc.frequency.exponentialRampToValueAtTime(360, t + 0.1);
+          gain.gain.setValueAtTime(0.16, t);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.14);
+        }
+      } catch (_) { /* ignore */ }
+    }
     function cardValue(rank) {
       if (rank === "A") return 11;
       if (rank === "K" || rank === "Q" || rank === "J") return 10;
@@ -888,12 +1068,13 @@
     function layoutCards(box) {
       const cards = [...box.children];
       const n = cards.length;
-      const cardW = cards[0] ? cards[0].offsetWidth || 68 : 68;
+      const cardW = cards[0] ? cards[0].offsetWidth || 136 : 136;
       const available = box.clientWidth || 300;
       let overlap = 0;
       if (n > 1) {
         const need = n * cardW;
-        overlap = need > available ? Math.min(42, Math.ceil((need - available) / (n - 1)) + 4) : (n > 3 ? 14 : 6);
+        const cap = Math.floor(cardW * 0.72);
+        overlap = need > available ? Math.min(cap, Math.ceil((need - available) / (n - 1)) + 8) : (n > 3 ? 28 : 12);
       }
       cards.forEach((el, i) => {
         el.style.marginLeft = i === 0 ? "0" : `-${overlap}px`;
@@ -902,17 +1083,11 @@
     }
     function paintHand(who, cards) {
       const box = $(who + "-cards");
+      if (!box) return;
       const hideHole = who === "dealer" && holeHidden && cards.length > 1;
-      while (box.children.length > cards.length) box.removeChild(box.lastChild);
-      while (box.children.length < cards.length) {
-        const i = box.children.length;
-        const el = createCardEl(cards[i], hideHole && i === 1);
-        el.classList.add("deal");
-        box.appendChild(el);
-      }
-      if (!hideHole && box.children[1]) box.children[1].classList.remove("face-down");
-      layoutCards(box);
+      syncCards(box, cards, hideHole);
       const score = $(who + "-score");
+      if (!score) return;
       if (!cards.length) {
         score.textContent = "";
         score.classList.remove("bust");
@@ -922,6 +1097,58 @@
       const total = handTotal(shown);
       score.textContent = total > 21 ? total + " 버스트" : String(total);
       score.classList.toggle("bust", total > 21);
+    }
+    function syncCards(box, cards, hideHole) {
+      while (box.children.length > cards.length) box.removeChild(box.lastChild);
+      while (box.children.length < cards.length) {
+        const i = box.children.length;
+        const el = createCardEl(cards[i], hideHole && i === 1);
+        el.classList.add("deal");
+        box.appendChild(el);
+      }
+      for (let i = 0; i < cards.length; i += 1) {
+        box.children[i].classList.toggle("face-down", Boolean(hideHole && i === 1));
+      }
+      layoutCards(box);
+    }
+    function paintPlayers() {
+      const zone = $("player-zone");
+      const box = $("player-hands");
+      const scale = hands.length > 1 ? 1 / hands.length : 1;
+      zone.style.setProperty("--card-scale", String(scale));
+      if (!hands.length) {
+        box.innerHTML = "";
+        return;
+      }
+      while (box.children.length > hands.length) box.removeChild(box.lastChild);
+      while (box.children.length < hands.length) {
+        const col = document.createElement("div");
+        col.className = "player-hand";
+        col.innerHTML = `<div class="hand-meta"><span></span><b class="score"></b></div><div class="cards"></div>`;
+        box.appendChild(col);
+      }
+      hands.forEach((hand, i) => {
+        const col = box.children[i];
+        col.classList.toggle("active", phase === "player" && i === active && hands.length > 1);
+        col.querySelector("span").textContent = hands.length > 1 ? String(i + 1) : "나";
+        syncCards(col.querySelector(".cards"), hand.cards, false);
+        const score = col.querySelector(".score");
+        if (!hand.cards.length) {
+          score.textContent = "";
+          score.classList.remove("bust");
+          return;
+        }
+        const total = handTotal(hand.cards);
+        score.textContent = total > 21 ? total + " 버스트" : String(total);
+        score.classList.toggle("bust", total > 21);
+      });
+    }
+    function canSplit(index) {
+      const hand = hands[index];
+      if (!hand || hand.done || hand.cards.length !== 2) return false;
+      if (hand.cards[0].rank !== hand.cards[1].rank) return false;
+      if (hands.length >= MAX_HANDS) return false;
+      return bank >= hand.bet;
     }
 
     function paintStack(stackEl, chips, bonus, compact) {
@@ -945,24 +1172,62 @@
         stackEl.appendChild(el);
       });
     }
-    function spotEl(pot) {
+    function spotEl(pot, index) {
       if (pot === "pair") return $("pair-spot");
       if (pot === "insure") return $("insure-spot");
-      return betSpot;
+      if (index != null) {
+        const found = document.querySelector(`#main-spots [data-hand="${index}"]`);
+        if (found) return found;
+      }
+      return document.querySelector("#main-spots button");
+    }
+    function renderMainSpots() {
+      const row = $("main-spots");
+      const multi = hands.length > 1;
+      const need = multi ? hands.length : 1;
+      const mode = multi ? "multi" : "single";
+      if (row.dataset.mode !== mode || row.childElementCount !== need) {
+        row.dataset.mode = mode;
+        row.innerHTML = "";
+        for (let i = 0; i < need; i += 1) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.dataset.pot = multi ? "hand" : "main";
+          btn.dataset.hand = String(i);
+          if (!multi) btn.id = "bet-spot";
+          btn.innerHTML = `<span class="spot-name"></span><div class="mini-stack"></div><div class="bet-empty">칩을 탭하거나<br />여기로 끌어오세요</div><div class="spot-amt"></div>`;
+          btn.addEventListener("click", () => {
+            if (Date.now() - placedAt < 280) return;
+            if (phase !== "betting" || hands.length > 1) return;
+            removeLastChip("main");
+          });
+          row.appendChild(btn);
+        }
+      }
+      [...row.children].forEach((btn, i) => {
+        const chips = multi ? hands[i].chips : betChips;
+        const bonus = multi ? hands[i].bonus : bonusMain;
+        const amount = (multi ? hands[i].bet : bet) + bonus.reduce((sum, value) => sum + value, 0);
+        btn.querySelector(".spot-name").textContent = multi ? String(i + 1) : "기본";
+        paintStack(btn.querySelector(".mini-stack"), chips, bonus, true);
+        const empty = btn.querySelector(".bet-empty");
+        empty.hidden = multi || chips.length + bonus.length > 0;
+        btn.querySelector(".spot-amt").textContent = money(amount);
+        btn.classList.toggle("armed", amount > 0);
+        btn.classList.toggle("active", !multi && activePot === "main" && phase === "betting");
+        btn.classList.toggle("locked", phase !== "betting");
+        btn.classList.toggle("hot", false);
+      });
     }
     function renderBet() {
-      paintStack(chipStack, betChips, bonusMain, false);
+      renderMainSpots();
       paintStack($("pair-spot").querySelector(".mini-stack"), pairChips, bonusPair, true);
       paintStack($("insure-spot").querySelector(".mini-stack"), insureChips, bonusInsure, true);
-      $("bet-empty").hidden = betChips.length + bonusMain.length > 0;
-      $("bet-amount").textContent = won(bet + bonusMain.reduce((sum, value) => sum + value, 0));
       $("pair-spot").hidden = hidePair;
       $("insure-spot").hidden = !showInsure;
       $("side-bets").hidden = hidePair && !showInsure;
-      $("pair-spot").querySelector(".spot-amt").textContent = won(pairBet + bonusPair.reduce((sum, value) => sum + value, 0));
-      $("insure-spot").querySelector(".spot-amt").textContent = insureLabel || won(insureBet + bonusInsure.reduce((sum, value) => sum + value, 0));
-      betSpot.classList.toggle("armed", bet > 0);
-      betSpot.classList.toggle("active", activePot === "main" && phase === "betting");
+      $("pair-spot").querySelector(".spot-amt").textContent = money(pairBet + bonusPair.reduce((sum, value) => sum + value, 0));
+      $("insure-spot").querySelector(".spot-amt").textContent = insureLabel || money(insureBet + bonusInsure.reduce((sum, value) => sum + value, 0));
       $("pair-spot").classList.toggle("active", activePot === "pair" && phase === "betting");
       $("insure-spot").classList.toggle("active", phase === "insurance");
       const done = $("bet-done");
@@ -974,7 +1239,7 @@
       }
     }
     function renderChrome() {
-      $("bank").textContent = won(bank);
+      $("bank").textContent = money(bank);
       messageEl.hidden = Boolean(toast);
       const toastEl = $("toast");
       if (!toast) {
@@ -987,7 +1252,7 @@
       }
       $("reset-btn").hidden = phase !== "betting";
       paintHand("dealer", dealer);
-      paintHand("player", player);
+      paintPlayers();
       renderBet();
       renderActions();
     }
@@ -1002,15 +1267,18 @@
         button.addEventListener("click", onClick);
         actionBar.appendChild(button);
       };
+      const hand = hands[active];
       if (phase === "betting") {
-        if (bank < 100 && committed() === 0) add("5만원 다시 받기", refill, true, busy);
-        else add(sheetOpen ? "베팅 닫기" : "베팅하기", toggleSheet, true, busy);
+        if (bank < 10 && committed() === 0) add("$500 다시 받기", refill, true, busy);
       } else if (phase === "insurance") {
         add("인슈어런스", openInsuranceSheet, true, busy);
       } else if (phase === "player") {
         add("히트", () => playerHit(), false, busy);
         add("스탠드", () => playerStand(), false, busy);
-        add("더블", () => playerDouble(), false, busy || player.length !== 2 || bank < bet);
+        add("더블", () => playerDouble(), false, busy || !hand || hand.cards.length !== 2 || bank < hand.bet);
+        if (canSplit(active) || (hand && hand.cards.length === 2 && hand.cards[0].rank === hand.cards[1].rank && hands.length < MAX_HANDS)) {
+          add("스플릿", () => playerSplit(), false, busy || !canSplit(active));
+        }
       } else if (phase === "result") {
         add("다음 판", nextRound, true, busy);
       } else {
@@ -1072,7 +1340,7 @@
         renderChrome();
         return;
       }
-      if (target === "insure" && insureBet + value > Math.floor(bet / 2)) {
+      if (target === "insure" && insureBet + value > Math.floor((baseBet || bet) / 2)) {
         setMessage("인슈어런스는 기본 베팅의 절반까지예요");
         shakeChip(value);
         renderChrome();
@@ -1087,11 +1355,13 @@
       activePot = target;
       setPotAmount(target, potAmount(target) + value);
       potChips(target).push(value);
+      placedAt = Date.now();
       playChipSound();
-      setMessage(potName(target) + " " + won(potAmount(target)) + " · 같은 칸을 누르면 마지막 간식을 빼요");
+      setMessage(potName(target) + " " + money(potAmount(target)) + " · 같은 칸을 누르면 마지막 칩을 빼요");
       renderChrome();
     }
     function removeLastChip(pot) {
+      if (Date.now() - placedAt < 280) return;
       const target = pot || activePot;
       const chips = potChips(target);
       if (!canEditPot(target)) return;
@@ -1103,7 +1373,7 @@
       const value = chips.pop();
       setPotAmount(target, potAmount(target) - value);
       activePot = target;
-      setMessage(potAmount(target) > 0 ? potName(target) + " " + won(potAmount(target)) : "간식을 탭하거나 칸으로 끌어오세요");
+      setMessage(potAmount(target) > 0 ? potName(target) + " " + money(potAmount(target)) : "칩을 탭하거나 칸으로 끌어오세요");
       renderChrome();
     }
     function potFromPoint(x, y) {
@@ -1112,9 +1382,7 @@
       return spot ? spot.dataset.pot : null;
     }
     function clearHot() {
-      betSpot.classList.remove("hot");
-      $("pair-spot").classList.remove("hot");
-      $("insure-spot").classList.remove("hot");
+      document.querySelectorAll("#main-spots button, .side-spot").forEach((el) => el.classList.remove("hot"));
     }
 
     function buildChips() {
@@ -1124,7 +1392,7 @@
         button.type = "button";
         button.className = "chip";
         button.dataset.value = String(chip.value);
-        button.setAttribute("aria-label", `${chip.name} ${won(chip.value)} 베팅`);
+        button.setAttribute("aria-label", `${chip.name} ${money(chip.value)} 베팅`);
         const face = document.createElement("span");
         face.className = "chip-face";
         face.style.setProperty("--ring", chip.ring);
@@ -1132,7 +1400,7 @@
         const name = document.createElement("small");
         name.textContent = chip.name;
         const price = document.createElement("b");
-        price.textContent = chip.value.toLocaleString("ko-KR");
+        price.textContent = money(chip.value);
         button.append(face, name, price);
         bindChipPointer(button, chip);
         list.appendChild(button);
@@ -1192,15 +1460,10 @@
       if (!cards.length) return 0;
       return handTotal(hideHole ? [cards[0]] : cards);
     }
-    function resultSub() {
-      const mine = handTotal(player);
-      const theirs = holeHidden ? visibleTotal(dealer, true) : handTotal(dealer);
-      return `나 ${mine} · 딜러 ${holeHidden ? theirs : theirs}`;
-    }
     function breakIntoChips(amount) {
       const chips = [];
       let left = Math.max(0, Math.round(amount));
-      for (const value of [5000, 1000, 500, 100]) {
+      for (const value of [100, 50, 25, 10]) {
         while (left >= value && chips.length < 8) {
           chips.push(value);
           left -= value;
@@ -1213,8 +1476,10 @@
       if (pot === "insure") return bonusInsure;
       return bonusMain;
     }
-    async function flyPayout(pot, chips) {
-      const spot = spotEl(pot);
+    async function flyPayout(pot, chips, handIndex) {
+      const spot = spotEl(pot, handIndex);
+      if (!spot) return;
+      const bucket = handIndex != null && hands[handIndex] ? hands[handIndex].bonus : bonusList(pot);
       const app = $("app");
       const from = $("dealer-cards").getBoundingClientRect();
       const appBox = app.getBoundingClientRect();
@@ -1241,63 +1506,155 @@
         playChipSound();
         await sleep(120);
         el.remove();
-        bonusList(pot).push(value);
+        bucket.push(value);
         renderBet();
       }
       const rest = chips.slice(6);
       if (rest.length) {
-        bonusList(pot).push(...rest);
+        bucket.push(...rest);
         renderBet();
       }
     }
     async function settlePair() {
-      const matched = player.length >= 2 && player[0].rank === player[1].rank;
+      const cards = hands[0] ? hands[0].cards : [];
+      const matched = cards.length >= 2 && cards[0].rank === cards[1].rank;
       if (!matched || pairBet <= 0) {
         hidePair = true;
-        if (!matched && pairBet > 0) sideNotes.push("페어 -" + pairBet.toLocaleString("ko-KR") + "원");
+        if (!matched && pairBet > 0) sideNotes.push("페어 -" + money(pairBet));
         renderChrome();
         return;
       }
       const profit = pairBet * 11;
       bank += pairBet + profit;
-      sideNotes.push("페어 +" + profit.toLocaleString("ko-KR") + "원");
-      setMessage("페어! +" + profit.toLocaleString("ko-KR") + "원");
+      sideNotes.push("페어 +" + money(profit));
+      setMessage("페어! +" + money(profit));
       renderChrome();
       await flyPayout("pair", breakIntoChips(profit));
     }
     async function settleInsurance() {
       if (insureBet <= 0 || !isBlackjack(dealer)) {
-        if (insureBet > 0) sideNotes.push("인슈어런스 -" + insureBet.toLocaleString("ko-KR") + "원");
+        if (insureBet > 0) sideNotes.push("인슈어런스 -" + money(insureBet));
         return;
       }
       const profit = insureBet * 2;
       bank += insureBet + profit;
-      sideNotes.push("인슈어런스 +" + profit.toLocaleString("ko-KR") + "원");
-      setMessage("인슈어런스! +" + profit.toLocaleString("ko-KR") + "원");
+      sideNotes.push("인슈어런스 +" + money(profit));
+      setMessage("인슈어런스! +" + money(profit));
       renderChrome();
       await flyPayout("insure", breakIntoChips(profit));
     }
+    function showBanner(tone, title, sub) {
+      const banner = $("banner");
+      banner.hidden = false;
+      banner.className = tone;
+      $("banner-title").textContent = title;
+      $("banner-sub").textContent = sub || "";
+      $("banner-sub").hidden = !sub;
+      clearTimeout(bannerTimer);
+      bannerTimer = setTimeout(() => { banner.hidden = true; }, 2000);
+    }
+    function playResultSound(kind) {
+      if (kind === "playerBJ") {
+        playFireworks();
+        setTimeout(playWinSound, 500);
+      } else if (kind === "dealerBJ") {
+        playBang();
+        setTimeout(playLoseSound, 500);
+      } else if (kind === "win") playWinSound();
+      else if (kind === "lose") playLoseSound();
+    }
+    async function finishRound() {
+      const dealerBJ = isBlackjack(dealer);
+      const outcomes = hands.map((hand) => {
+        const mine = handTotal(hand.cards);
+        const theirs = handTotal(dealer);
+        const natural = hands.length === 1 && isBlackjack(hand.cards);
+        if (natural && dealerBJ) return { kind: "push", back: hand.bet, profit: 0 };
+        if (natural) return { kind: "blackjack", back: hand.bet, profit: Math.round(hand.bet * 1.5) };
+        if (mine > 21) return { kind: "bust", back: 0, profit: 0 };
+        if (dealerBJ || theirs > mine) return { kind: "lose", back: 0, profit: 0 };
+        if (theirs > 21) return { kind: "dealerBust", back: hand.bet, profit: hand.bet };
+        if (mine > theirs) return { kind: "win", back: hand.bet, profit: hand.bet };
+        return { kind: "push", back: hand.bet, profit: 0 };
+      });
+      let net = 0;
+      const payouts = [];
+      outcomes.forEach((outcome, index) => {
+        bank += outcome.back + outcome.profit;
+        net += outcome.profit - (outcome.back ? 0 : hands[index].bet);
+        if (outcome.profit > 0) payouts.push({ index, chips: hands[index].chips.slice() });
+      });
+      saveBank();
+      phase = "result";
+      closeSheet();
+      const allBust = outcomes.every((outcome) => outcome.kind === "bust");
+      const playerBJ = outcomes.some((outcome) => outcome.kind === "blackjack");
+      const dealerBust = handTotal(dealer) > 21 && outcomes.some((outcome) => outcome.kind !== "bust");
+      let tone = "push";
+      let title = "무승부";
+      let sub = "";
+      let sound = "none";
+      if (allBust) {
+        tone = "lose";
+        title = "플레이어 버스트";
+        sound = "lose";
+      } else if (playerBJ && !dealerBJ) {
+        tone = "win";
+        title = "플레이어 WIN!";
+        sub = "플레이어 블랙잭!";
+        sound = "playerBJ";
+      } else if (dealerBJ && !playerBJ) {
+        tone = "lose";
+        title = "플레이어 LOSE";
+        sub = "딜러 블랙잭!";
+        sound = "dealerBJ";
+      } else if (playerBJ && dealerBJ) {
+        tone = "push";
+        title = "무승부";
+        sub = "블랙잭";
+      } else if (dealerBust) {
+        tone = "win";
+        title = "딜러 버스트";
+        sound = "win";
+      } else if (net > 0) {
+        tone = "win";
+        title = "플레이어 WIN!";
+        sound = "win";
+      } else if (net < 0) {
+        tone = "lose";
+        title = "플레이어 LOSE";
+        sound = "lose";
+      }
+      const detail = (net > 0 ? "+" : net < 0 ? "" : "") + (net === 0 ? "무승부" : money(net));
+      const extra = sideNotes.length ? " · " + sideNotes.join(" · ") : "";
+      showBanner(tone, title, sub);
+      toast = null;
+      setMessage(detail + extra);
+      renderChrome();
+      playResultSound(sound);
+      for (const payout of payouts) await flyPayout("main", payout.chips, payout.index);
+    }
     async function continueHand() {
       if (showInsure) await settleInsurance();
-      const playerBJ = isBlackjack(player);
+      const playerBJ = hands.length === 1 && isBlackjack(hands[0].cards);
       const dealerBJ = isBlackjack(dealer);
       if (playerBJ || dealerBJ) {
         holeHidden = false;
         renderChrome();
-        await sleep(360);
-        if (playerBJ && dealerBJ) await finish("push");
-        else if (playerBJ) await finish("blackjack");
-        else await finish("lose");
+        playCardSlap();
+        await sleep(DEAL_MS);
+        await finishRound();
       } else {
         phase = "player";
+        active = 0;
         const side = sideNotes.length ? sideNotes.join(" · ") + " · " : "";
-        setMessage(side + "히트, 스탠드, 더블 중 골라 주세요");
+        setMessage(side + "히트, 스탠드, 더블, 스플릿 중 골라 주세요");
         renderChrome();
       }
     }
     async function confirmInsurance() {
       if (phase !== "insurance" || busy) return;
-      if (insureBet > Math.floor(bet / 2)) {
+      if (insureBet > Math.floor(baseBet / 2)) {
         setMessage("인슈어런스는 기본 베팅의 절반까지예요");
         renderChrome();
         return;
@@ -1310,64 +1667,56 @@
       busy = true;
       bank -= insureBet;
       closeSheet();
-      if (insureBet === 0) showInsure = false;
       renderChrome();
       await continueHand();
       busy = false;
       renderChrome();
     }
-    async function finish(kind) {
-      let title = "";
-      let toastKind = "lose";
-      let mainWin = false;
-      if (kind === "blackjack") {
-        const bonus = Math.round(bet * 1.5);
-        bank += bet + bonus;
-        title = `블랙잭! +${bonus.toLocaleString("ko-KR")}원`;
-        toastKind = "win";
-        mainWin = true;
-      } else if (kind === "win" || kind === "dealerBust") {
-        bank += bet * 2;
-        title = (kind === "dealerBust" ? "딜러 버스트 · " : "") + `이겼어요 +${bet.toLocaleString("ko-KR")}원`;
-        toastKind = "win";
-        mainWin = true;
-      } else if (kind === "push") {
-        bank += bet;
-        title = "무승부";
-        toastKind = "push";
-      } else {
-        title = (kind === "bust" ? "버스트 · " : "") + `졌어요 -${bet.toLocaleString("ko-KR")}원`;
-        toastKind = "lose";
-      }
-      saveBank();
-      phase = "result";
-      closeSheet();
-      const dealerLabel = holeHidden ? "비공개" : String(handTotal(dealer));
-      const extra = sideNotes.length ? " · " + sideNotes.join(" · ") : "";
-      showToast(toastKind, title, `나 ${handTotal(player)} · 딜러 ${dealerLabel}${extra}`);
-      if (mainWin) {
-        playWinSound();
-        await flyPayout("main", betChips.slice());
-      } else if (toastKind === "lose") {
-        playLoseSound();
-      }
-    }
     async function dealerTurn() {
       phase = "dealer";
       holeHidden = false;
       renderChrome();
-      await sleep(420);
+      playCardSlap();
+      await sleep(DEAL_MS);
       while (handTotal(dealer) < 17) {
         dealer.push(draw());
         renderChrome();
-        await sleep(460);
+        playCardSlap();
+        await sleep(DEAL_MS);
       }
-      const mine = handTotal(player);
-      const theirs = handTotal(dealer);
-      if (theirs > 21) await finish("dealerBust");
-      else if (mine > theirs) await finish("win");
-      else if (mine < theirs) await finish("lose");
-      else await finish("push");
+      await finishRound();
+    }
+    async function dealTo(index) {
+      hands[index].cards.push(draw());
+      renderChrome();
+      playCardSlap();
+      await sleep(DEAL_MS);
+    }
+    async function dealDealer(faceDown) {
+      dealer.push(draw());
+      holeHidden = faceDown;
+      renderChrome();
+      playCardSlap();
+      await sleep(DEAL_MS);
+    }
+    async function advance() {
+      hands[active].done = true;
+      const next = hands.findIndex((hand, index) => index > active && !hand.done);
+      if (next >= 0) {
+        active = next;
+        setMessage((active + 1) + "번 핸드");
+        renderChrome();
+        return;
+      }
+      if (hands.every((hand) => handTotal(hand.cards) > 21)) {
+        holeHidden = false;
+        renderChrome();
+        playCardSlap();
+        await sleep(DEAL_MS);
+        await finishRound();
+        return;
+      }
+      await dealerTurn();
     }
     async function openDeal() {
       const wager = committed();
@@ -1383,30 +1732,22 @@
       bonusMain = [];
       bonusPair = [];
       bonusInsure = [];
+      baseBet = bet;
+      hands = [{ cards: [], bet, chips: betChips.slice(), bonus: [], done: false }];
+      active = 0;
       closeSheet();
       toast = null;
-      player = [];
       dealer = [];
       holeHidden = true;
       phase = "dealing";
       $("dealer-cards").innerHTML = "";
-      $("player-cards").innerHTML = "";
+      $("banner").hidden = true;
       setMessage("카드를 나누는 중");
       renderChrome();
-      const order = [
-        ["player", false],
-        ["dealer", false],
-        ["player", false],
-        ["dealer", true],
-      ];
-      for (const [who, down] of order) {
-        const card = draw();
-        if (who === "player") player.push(card);
-        else dealer.push(card);
-        if (down) holeHidden = true;
-        renderChrome();
-        await sleep(280);
-      }
+      await dealTo(0);
+      await dealDealer(false);
+      await dealTo(0);
+      await dealDealer(true);
       await settlePair();
       if (dealer[0].rank === "A") {
         phase = "insurance";
@@ -1424,55 +1765,61 @@
     async function playerHit() {
       if (busy || phase !== "player") return;
       busy = true;
-      player.push(draw());
-      const total = handTotal(player);
-      renderChrome();
-      if (total > 21) {
-        holeHidden = false;
-        renderChrome();
-        await sleep(420);
-        await finish("bust");
-      } else if (total === 21) {
-        setMessage("21이에요");
-        renderChrome();
-        await sleep(280);
-        await dealerTurn();
-      } else {
-        setMessage("히트, 스탠드 중 골라 주세요");
-        renderChrome();
-      }
+      await dealTo(active);
+      if (handTotal(hands[active].cards) >= 21) await advance();
+      else setMessage("히트, 스탠드, 더블 중 골라 주세요");
       busy = false;
       renderChrome();
     }
     async function playerStand() {
       if (busy || phase !== "player") return;
       busy = true;
-      await dealerTurn();
+      await advance();
       busy = false;
       renderChrome();
     }
     async function playerDouble() {
-      if (busy || phase !== "player" || player.length !== 2 || bank < bet) return;
+      const hand = hands[active];
+      if (busy || phase !== "player" || !hand || hand.cards.length !== 2 || bank < hand.bet) return;
       busy = true;
-      bank -= bet;
-      betChips = betChips.concat(betChips);
-      bet *= 2;
-      player.push(draw());
-      renderChrome();
-      await sleep(320);
-      if (handTotal(player) > 21) {
-        holeHidden = false;
-        renderChrome();
-        await sleep(420);
-        await finish("bust");
-      }
-      else await dealerTurn();
+      bank -= hand.bet;
+      hand.chips = hand.chips.concat(hand.chips);
+      hand.bet *= 2;
+      await dealTo(active);
+      await advance();
       busy = false;
       renderChrome();
     }
-    function nextRound() {
-      if (busy) return;
-      player = [];
+    async function playerSplit() {
+      if (busy || phase !== "player" || !canSplit(active)) return;
+      busy = true;
+      const hand = hands[active];
+      const moved = hand.cards.pop();
+      bank -= hand.bet;
+      hands.splice(active + 1, 0, {
+        cards: [moved],
+        bet: hand.bet,
+        chips: hand.chips.slice(),
+        bonus: [],
+        done: false,
+      });
+      renderChrome();
+      await sleep(200);
+      await dealTo(active);
+      await dealTo(active + 1);
+      if (handTotal(hands[active].cards) >= 21) await advance();
+      else setMessage("스플릿했어요. 같은 숫자면 한 번 더 나눌 수 있어요");
+      busy = false;
+      renderChrome();
+    }
+    function openSheet() {
+      sheetOpen = true;
+      sheet.classList.add("open");
+      sheet.setAttribute("aria-hidden", "false");
+    }
+    function resetRoundState() {
+      hands = [];
+      active = 0;
       dealer = [];
       bet = 0;
       betChips = [];
@@ -1487,18 +1834,24 @@
       hidePair = false;
       showInsure = false;
       sideNotes = [];
+      baseBet = 0;
       activePot = "main";
       holeHidden = true;
       phase = "betting";
       $("dealer-cards").innerHTML = "";
-      $("player-cards").innerHTML = "";
-      setMessage(bank < 100 ? "간식비가 떨어졌어요" : "베팅하기를 눌러 간식을 올려 주세요");
+      $("banner").hidden = true;
+      openSheet();
+    }
+    function nextRound() {
+      if (busy) return;
+      resetRoundState();
+      setMessage(bank < 10 ? "칩이 부족해요" : "칩을 올려 주세요");
       renderChrome();
     }
     function refill() {
       bank = START_BANK;
       saveBank();
-      setMessage("5만원을 다시 채웠어요");
+      setMessage("$500을 다시 채웠어요");
       renderChrome();
     }
 
@@ -1508,7 +1861,7 @@
         return;
       }
       if (bet <= 0) {
-        setMessage("간식을 먼저 올려 주세요");
+        setMessage("칩을 먼저 올려 주세요");
         sheet.classList.remove("shake");
         void sheet.offsetWidth;
         sheet.classList.add("shake");
@@ -1518,51 +1871,46 @@
       openDeal();
     });
     $("sheet-handle").addEventListener("click", () => {
+      if (phase === "betting") return;
       if (sheetOpen) toggleSheet();
     });
-    for (const spot of [betSpot, $("pair-spot"), $("insure-spot")]) {
+    for (const spot of [$("pair-spot"), $("insure-spot")]) {
       spot.addEventListener("click", () => {
-        if (phase === "insurance" && spot.dataset.pot === "insure" && !sheetOpen) {
-          openInsuranceSheet();
+        if (Date.now() - placedAt < 280) return;
+        if (phase === "insurance" && spot.dataset.pot === "insure") {
+          if (!sheetOpen) openInsuranceSheet();
+          else removeLastChip("insure");
           return;
         }
+        if (phase !== "betting") return;
         removeLastChip(spot.dataset.pot);
       });
     }
     $("table").addEventListener("pointerdown", (event) => {
-      if (!sheetOpen || (phase !== "betting" && phase !== "insurance")) return;
+      if (phase === "betting") return;
+      if (!sheetOpen || phase !== "insurance") return;
       if (event.target.closest("[data-pot]") || event.target.closest("#sheet")) return;
       toggleSheet();
     });
     $("reset-btn").addEventListener("click", () => {
       if (phase !== "betting" || busy) return;
-      if (!window.confirm("보유 금액을 5만원으로 되돌릴까요?")) return;
+      if (!window.confirm("보유 금액을 $500으로 되돌릴까요?")) return;
       bank = START_BANK;
-      bet = 0;
-      betChips = [];
-      pairBet = 0;
-      pairChips = [];
-      insureBet = 0;
-      insureChips = [];
-      bonusMain = [];
-      bonusPair = [];
-      bonusInsure = [];
-      insureLabel = "";
-      hidePair = false;
-      showInsure = false;
-      activePot = "main";
+      resetRoundState();
       saveBank();
-      setMessage("5만원으로 시작해요");
+      setMessage("$500으로 시작해요");
       renderChrome();
     });
     window.addEventListener("resize", () => {
       layoutCards($("dealer-cards"));
-      layoutCards($("player-cards"));
+      document.querySelectorAll("#player-hands .cards").forEach(layoutCards);
     });
 
     buildChips();
-    setMessage("베팅하기를 눌러 간식을 올려 주세요");
+    openSheet();
+    setMessage("칩을 올려 주세요");
     renderChrome();
+
   </script>
 </body>
 </html>
