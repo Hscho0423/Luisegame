@@ -85,6 +85,16 @@
       font-size: 10px;
       opacity: .75;
     }
+    .bank-stats {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .bank-stats > div {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
     #bank-pill strong {
       font-size: 14px;
       font-weight: 750;
@@ -484,9 +494,12 @@
     }
     #action-bar button {
       flex: 1;
+      min-width: 0;
       min-height: 48px;
+      padding: 0 2px;
       background: #fffef8;
       color: #145c38;
+      font-size: 14px;
     }
     #action-bar button.primary { background: #ffe08a; color: #3d2b00; }
     #action-bar button:disabled {
@@ -509,6 +522,43 @@
       padding: 8px 10px calc(12px + env(safe-area-inset-bottom));
     }
     .sheet.open { transform: translateY(0); }
+    #double-label {
+      margin: 0 0 6px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #8a5a00;
+    }
+    #double-label[hidden] { display: none; }
+    #double-pop {
+      position: absolute;
+      inset: 0;
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      pointer-events: none;
+      background: rgba(0, 0, 0, .35);
+    }
+    #double-pop[hidden] { display: none; }
+    #double-pop img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #ffe08a;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+    }
+    #double-pop strong {
+      font-size: 42px;
+      line-height: 1.1;
+      color: #ffe08a;
+      text-align: center;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, .55), 0 0 16px rgba(0, 0, 0, .45);
+    }
     .handle {
       width: 100%;
       height: 22px;
@@ -558,8 +608,8 @@
     }
     .chip:disabled { opacity: .35; filter: grayscale(.4); }
     .chip-face {
-      width: 54px;
-      height: 54px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       overflow: hidden;
       position: relative;
@@ -567,8 +617,8 @@
       box-shadow: 0 3px 0 rgba(0,0,0,.08), inset 0 0 0 2px rgba(255,255,255,.7);
       background: #f3e6d4;
     }
-    .chip small { font-size: 9px; line-height: 1.1; letter-spacing: -0.04em; white-space: nowrap; }
-    .chip b { font-size: 11px; line-height: 1.1; }
+    .chip small { font-size: 8px; line-height: 1.1; letter-spacing: -0.05em; white-space: nowrap; }
+    .chip b { font-size: 10px; line-height: 1.1; }
     .snack {
       position: absolute;
       left: 50%;
@@ -739,7 +789,7 @@
     @media (max-width: 360px) {
       .card { width: calc(116px * var(--card-scale, 1)); height: calc(164px * var(--card-scale, 1)); }
       .cards { min-height: calc(164px * var(--card-scale, 1)); }
-      .chip-face { width: 46px; height: 46px; }
+      .chip-face { width: 36px; height: 36px; }
       .pip { font-size: calc(22px * var(--card-scale, 1)); }
       .score { font-size: 22px; }
     }
@@ -764,8 +814,16 @@
         <p class="rule">블랙잭 3:2 · 페어 5·10·30배 · 인슈어런스 2배</p>
       </div>
       <div id="bank-pill">
-        <small>보유</small>
-        <strong id="bank">$500</strong>
+        <div class="bank-stats">
+          <div>
+            <small>보유</small>
+            <strong id="bank">$0</strong>
+          </div>
+          <div>
+            <small>최고</small>
+            <strong id="peak">$0</strong>
+          </div>
+        </div>
         <button type="button" id="code-btn">코드입력</button>
       </div>
       <button type="button" id="history-btn">최근기록</button>
@@ -837,8 +895,13 @@
       </div>
       <div id="history-list"></div>
     </div>
+    <div id="double-pop" hidden>
+      <img src="./icon.png" alt="" />
+      <strong>2배 이벤트!</strong>
+    </div>
     <div id="sheet" class="sheet open" aria-hidden="false">
       <button type="button" class="handle" id="sheet-handle" aria-label="베팅 창 닫기"></button>
+      <p id="double-label" hidden>2배 라운드</p>
       <div class="sheet-row">
         <div class="chip-list" id="chip-list"></div>
         <button type="button" id="bet-done">베팅<br />완료</button>
@@ -848,13 +911,17 @@
 
   <script>
     const BANK_KEY = "luise-blackjack-bank-v3";
+    const PEAK_KEY = "luise-blackjack-peak-v1";
     const HISTORY_KEY = "luise-blackjack-history-v1";
+    const ROUND_KEY = "luise-blackjack-rounds-v1";
+    const DOUBLE_NOTICE_KEY = "luise-blackjack-double-notice-v1";
     const CODE_AMOUNTS = {
       L260123: 100,
       M020521: 500,
       H980423: 1000,
+      HSCHO0423: 5000,
     };
-    const START_BANK = 500;
+    const START_BANK = 0;
     const DEAL_MS = 600;
     const MAX_HANDS = 4;
     const FACE_SRC = {
@@ -891,6 +958,8 @@
       { value: 25, name: "북어간식", file: "./chips/pollock.jpg", x: "50%", y: "50%", zoom: "148%", ring: "#d9d3c4" },
       { value: 50, name: "연어간식", file: "./chips/salmon.jpg", x: "50%", y: "50%", zoom: "155%", ring: "#e07a4a" },
       { value: 100, name: "고구마간식", file: "./chips/sweetpotato.jpg", x: "50%", y: "52%", zoom: "175%", ring: "#e0a04a" },
+      { value: 500, name: "계란", file: "./chips/egg.jpg", x: "50%", y: "46%", zoom: "145%", ring: "#f2e2b0" },
+      { value: 1000, name: "멜론", file: "./chips/melon.jpg", x: "42%", y: "48%", zoom: "155%", ring: "#b7d36a" },
     ];
 
     const $ = (id) => document.getElementById(id);
@@ -899,10 +968,12 @@
     const messageEl = $("message");
 
     let bank = loadBank();
+    let peak = loadPeak();
     let bet = 0;
     let betChips = [];
     let pairBet = 0;
     let pairChips = [];
+    let pairPaid = 0;
     let insureBet = 0;
     let insureChips = [];
     let bonusMain = [];
@@ -922,13 +993,16 @@
     let phase = "betting";
     let holeHidden = true;
     let roundSettled = false;
-    let bankBeforeRound = 500;
+    let bankBeforeRound = 0;
     let busy = false;
     let sheetOpen = true;
     let toast = null;
     let placedAt = 0;
     let bannerTimer = 0;
+    let doubleTimer = 0;
     let history = loadHistory();
+    let roundsPlayed = loadRounds();
+    let doubleNotice = loadDoubleNotice();
 
     function loadBank() {
       const raw = localStorage.getItem(BANK_KEY);
@@ -937,8 +1011,53 @@
       if (!Number.isFinite(n) || n < 0) return START_BANK;
       return Math.floor(n);
     }
+    function loadRounds() {
+      const n = Number(localStorage.getItem(ROUND_KEY));
+      return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+    }
+    function loadDoubleNotice() {
+      const n = Number(localStorage.getItem(DOUBLE_NOTICE_KEY));
+      return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+    }
+    function isDoubleRound() {
+      return (roundsPlayed + 1) % 15 === 0;
+    }
+    function completeRound() {
+      roundsPlayed += 1;
+      localStorage.setItem(ROUND_KEY, String(roundsPlayed));
+    }
+    function syncDoubleRound() {
+      const label = $("double-label");
+      const active = phase === "betting" && isDoubleRound();
+      label.hidden = !active;
+      if (!active) return;
+      const roundNo = roundsPlayed + 1;
+      if (doubleNotice === roundNo) return;
+      doubleNotice = roundNo;
+      localStorage.setItem(DOUBLE_NOTICE_KEY, String(roundNo));
+      const pop = $("double-pop");
+      pop.hidden = false;
+      clearTimeout(doubleTimer);
+      doubleTimer = setTimeout(() => { pop.hidden = true; }, 2000);
+    }
     function saveBank() {
       localStorage.setItem(BANK_KEY, String(bank));
+    }
+    function loadPeak() {
+      const raw = localStorage.getItem(PEAK_KEY);
+      let value = bank;
+      if (raw != null && raw !== "") {
+        const n = Number(raw);
+        if (Number.isFinite(n) && n >= 0) value = Math.max(Math.floor(n), bank);
+      }
+      localStorage.setItem(PEAK_KEY, String(value));
+      return value;
+    }
+    function rememberPeak() {
+      if (bank > peak) {
+        peak = bank;
+        localStorage.setItem(PEAK_KEY, String(peak));
+      }
     }
     function loadHistory() {
       try {
@@ -1384,6 +1503,15 @@
       if (hands.length >= MAX_HANDS) return false;
       return bank >= hand.bet;
     }
+    function canSurrender() {
+      const hand = hands[0];
+      return (phase === "player" || phase === "insurance")
+        && hands.length === 1
+        && !!hand
+        && hand.cards.length === 2
+        && !hand.done
+        && !(dealer[0] && dealer[0].rank === "A");
+    }
 
     function paintStack(stackEl, chips, bonus, compact) {
       stackEl.innerHTML = "";
@@ -1474,7 +1602,9 @@
       }
     }
     function renderChrome() {
+      rememberPeak();
       $("bank").textContent = money(bank);
+      $("peak").textContent = money(peak);
       messageEl.hidden = Boolean(toast);
       const toastEl = $("toast");
       if (!toast) {
@@ -1504,6 +1634,7 @@
       const hand = hands[active];
       if (phase === "insurance") {
         add("인슈어런스", openInsuranceSheet, true, busy);
+        if (canSurrender()) add("서렌더", () => playerSurrender(), false, busy);
       } else if (phase === "player") {
         add("히트", () => playerHit(), false, busy);
         add("스탠드", () => playerStand(), false, busy);
@@ -1511,9 +1642,10 @@
         if (canSplit(active) || (hand && hand.cards.length === 2 && !hand.done && cardValue(hand.cards[0].rank) === cardValue(hand.cards[1].rank) && hands.length < MAX_HANDS)) {
           add("스플릿", () => playerSplit(), false, busy || !canSplit(active));
         }
+        if (canSurrender()) add("서렌더", () => playerSurrender(), false, busy);
       } else if (phase === "result") {
         add("다음 판", nextRound, true, busy);
-      } else {
+      } else if (phase === "dealing" || phase === "dealer") {
         add("카드 나누는 중", () => {}, true, true);
       }
     }
@@ -1695,7 +1827,7 @@
     function breakIntoChips(amount) {
       const chips = [];
       let left = Math.max(0, Math.round(amount));
-      for (const value of [100, 50, 25, 10]) {
+      for (const value of [1000, 500, 100, 50, 25, 10]) {
         while (left >= value && chips.length < 8) {
           chips.push(value);
           left -= value;
@@ -1758,7 +1890,8 @@
         return;
       }
       const profit = pairBet * multiplier;
-      bank += pairBet + profit;
+      pairPaid = pairBet + profit;
+      bank += pairPaid;
       sideNotes.push("페어 " + multiplier + "배 +" + money(profit));
       setMessage("페어 " + multiplier + "배! +" + money(profit));
       renderChrome();
@@ -1800,23 +1933,29 @@
       if (roundSettled) return;
       roundSettled = true;
       const dealerBJ = isBlackjack(dealer);
+      const doubled = isDoubleRound();
       const outcomes = hands.map((hand) => {
         const mine = handTotal(hand.cards);
         const theirs = handTotal(dealer);
         const natural = hands.length === 1 && isBlackjack(hand.cards);
+        const winProfit = hand.bet * (doubled ? 2 : 1);
         if (natural && dealerBJ) return { kind: "push", back: hand.bet, profit: 0 };
-        if (natural) return { kind: "blackjack", back: hand.bet, profit: Math.round(hand.bet * 1.5) };
+        if (natural) return { kind: "blackjack", back: hand.bet, profit: Math.round(hand.bet * (doubled ? 3 : 1.5)) };
         if (mine > 21) return { kind: "bust", back: 0, profit: 0 };
-        if (theirs > 21) return { kind: "dealerBust", back: hand.bet, profit: hand.bet };
+        if (theirs > 21) return { kind: "dealerBust", back: hand.bet, profit: winProfit };
         if (dealerBJ || theirs > mine) return { kind: "lose", back: 0, profit: 0 };
-        if (mine > theirs) return { kind: "win", back: hand.bet, profit: hand.bet };
+        if (mine > theirs) return { kind: "win", back: hand.bet, profit: winProfit };
         return { kind: "push", back: hand.bet, profit: 0 };
       });
       const payouts = [];
       outcomes.forEach((outcome, index) => {
         bank += outcome.back + outcome.profit;
-        if (outcome.profit > 0) payouts.push({ index, chips: hands[index].chips.slice() });
+        if (outcome.profit > 0) {
+          const chips = doubled ? breakIntoChips(outcome.profit) : hands[index].chips.slice();
+          payouts.push({ index, chips });
+        }
       });
+      completeRound();
       saveBank();
       recordRound(outcomes);
       phase = "result";
@@ -1845,7 +1984,7 @@
       else if (dealerBJ) sub = "딜러 블랙잭!";
       else if (dealerBust) sub = "딜러 버스트";
       const detail = delta > 0 ? "+" + money(delta) : delta < 0 ? money(delta) : "무승부";
-      const extra = sideNotes.length ? " · " + sideNotes.join(" · ") : "";
+      const extra = (doubled && net > 0 ? " · 2배" : "") + (sideNotes.length ? " · " + sideNotes.join(" · ") : "");
       showBanner(tone, title, sub);
       toast = null;
       setMessage(detail + extra);
@@ -1945,6 +2084,7 @@
       roundSettled = false;
       bank -= wager;
       sideNotes = [];
+      pairPaid = 0;
       insureLabel = "";
       insureBet = 0;
       insureChips = [];
@@ -1980,6 +2120,52 @@
         return;
       }
       await continueHand();
+      busy = false;
+      renderChrome();
+    }
+    function playerSurrender() {
+      const hand = hands[0];
+      if (busy || roundSettled || !canSurrender()) return;
+      busy = true;
+      roundSettled = true;
+      if (pairPaid > 0) {
+        bank -= pairPaid;
+        bonusPair = [];
+        pairPaid = 0;
+      }
+      bank += Math.floor(hand.bet / 2);
+      sideNotes = sideNotes.filter((note) => note.indexOf("페어") !== 0);
+      if (pairBet > 0) sideNotes.unshift("페어 -" + money(pairBet));
+      if (phase === "insurance") {
+        insureBet = 0;
+        insureChips = [];
+        bonusInsure = [];
+        showInsure = false;
+      }
+      saveBank();
+      const delta = bank - bankBeforeRound;
+      history.push({
+        bet: hand.bet,
+        hands: [hand.bet],
+        pair: pairBet,
+        insure: insureBet,
+        dealer: holeHidden && dealer.length > 1 ? handTotal([dealer[0]]) : handTotal(dealer),
+        player: [handTotal(hand.cards)],
+        result: "패",
+        delta,
+        bank,
+      });
+      history = history.slice(-10);
+      saveHistory();
+      completeRound();
+      phase = "result";
+      closeSheet();
+      const detail = delta < 0 ? money(delta) : "무승부";
+      const extra = sideNotes.length ? " · " + sideNotes.join(" · ") : "";
+      showBanner("lose", "플레이어 LOSE", "서렌더");
+      setMessage(detail + extra);
+      renderChrome();
+      playResultSound("lose");
       busy = false;
       renderChrome();
     }
@@ -2046,6 +2232,7 @@
       betChips = [];
       pairBet = 0;
       pairChips = [];
+      pairPaid = 0;
       insureBet = 0;
       insureChips = [];
       bonusMain = [];
@@ -2067,6 +2254,7 @@
       if (busy) return;
       resetRoundState();
       setMessage(bank < 10 ? "칩이 부족해요" : "칩을 올려 주세요");
+      syncDoubleRound();
       renderChrome();
     }
     function openCodeBox() {
@@ -2152,7 +2340,8 @@
 
     buildChips();
     openSheet();
-    setMessage("칩을 올려 주세요");
+    setMessage(bank < 10 ? "칩이 부족해요" : "칩을 올려 주세요");
+    syncDoubleRound();
     renderChrome();
 
   </script>
