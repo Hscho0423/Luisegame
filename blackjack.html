@@ -2359,6 +2359,7 @@
     renderChrome();
 
     const updateBtn = $("update-btn");
+    const UPDATE_RELOAD_KEY = "bj-auto-reload";
     function normalizedLength(text) {
       return text.replace(/\r\n/g, "\n").length;
     }
@@ -2372,21 +2373,38 @@
       const script = html.match(/<script id="game-script">([\s\S]*?)<\/script>/);
       return normalizedLength(style ? style[1] : "") + ":" + normalizedLength(script ? script[1] : "");
     }
+    function canAutoUpdate() {
+      return phase === "betting" || phase === "result";
+    }
     async function checkGameUpdate() {
-      if (!updateBtn.hidden) return;
       try {
         const url = new URL("blackjack.html", location.href);
         url.searchParams.set("t", String(Date.now()));
         const res = await fetch(url.href, { cache: "no-store" });
         if (!res.ok) return;
         const html = await res.text();
-        if (remoteStamp(html) !== runningStamp()) updateBtn.hidden = false;
+        if (remoteStamp(html) === runningStamp()) {
+          sessionStorage.removeItem(UPDATE_RELOAD_KEY);
+          if (new URL(location.href).searchParams.has("v")) {
+            const clean = new URL(location.href);
+            clean.searchParams.delete("v");
+            history.replaceState(null, "", clean.href);
+          }
+          return;
+        }
+        updateBtn.hidden = false;
+        if (!canAutoUpdate() || sessionStorage.getItem(UPDATE_RELOAD_KEY) === "1") return;
+        updateBtn.textContent = "업데이트 중";
+        sessionStorage.setItem(UPDATE_RELOAD_KEY, "1");
+        await applyGameUpdate();
       } catch (_) {
         /* 오프라인이면 지금 버전으로 계속 */
       }
     }
     async function applyGameUpdate() {
       updateBtn.disabled = true;
+      updateBtn.hidden = false;
+      updateBtn.textContent = "업데이트 중";
       try {
         if ("caches" in window) {
           const keys = await caches.keys();
@@ -2399,7 +2417,10 @@
       url.searchParams.set("v", String(Date.now()));
       location.replace(url.href);
     }
-    updateBtn.addEventListener("click", applyGameUpdate);
+    updateBtn.addEventListener("click", () => {
+      sessionStorage.setItem(UPDATE_RELOAD_KEY, "1");
+      applyGameUpdate();
+    });
     checkGameUpdate();
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") checkGameUpdate();
