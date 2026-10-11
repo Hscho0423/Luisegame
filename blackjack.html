@@ -47,14 +47,23 @@
       gap: 8px;
       padding: calc(10px + env(safe-area-inset-top)) 14px 6px;
     }
-    .logo {
+    #patch-btn {
       width: 44px;
       height: 42px;
+      padding: 0;
+      border: 0;
       border-radius: 8px;
-      object-fit: contain;
       background: #e23b3b;
       box-shadow: 0 2px 6px rgba(0,0,0,.25);
       flex: none;
+      cursor: pointer;
+    }
+    #patch-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      border-radius: 8px;
     }
     .titles { flex: 1; min-width: 0; }
     h1 {
@@ -134,7 +143,16 @@
       background: #f6f1e8;
       color: #1c2a22;
     }
-    #history[hidden] { display: none; }
+    #history[hidden], #patch[hidden] { display: none; }
+    #patch {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      background: #f6f1e8;
+      color: #1c2a22;
+    }
     .history-head {
       display: flex;
       align-items: center;
@@ -149,7 +167,7 @@
       font-weight: 700;
       opacity: .65;
     }
-    #history-close {
+    #history-close, #patch-close {
       width: 40px;
       height: 40px;
       border: 0;
@@ -160,7 +178,7 @@
       line-height: 1;
       cursor: pointer;
     }
-    #history-list {
+    #history-list, #patch-list {
       flex: 1;
       min-height: 0;
       overflow: auto;
@@ -179,6 +197,23 @@
     .history-item .win { color: #145c38; }
     .history-item .lose { color: #a32020; }
     .history-item .push { color: #3d4a55; }
+    .patch-note {
+      border: 1px solid #e4d8c8;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .patch-note h3 { margin: 0; font-size: 16px; }
+    .patch-note time {
+      display: block;
+      margin: 2px 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: .65;
+    }
+    .patch-note ul { margin: 0; padding-left: 18px; }
+    .patch-note li { margin: 4px 0; font-size: 15px; }
     #code-btn {
       margin-top: 2px;
       border: 0;
@@ -817,7 +852,7 @@
       .cards { min-height: calc(160px * var(--card-scale, 1)); }
       .side-spot { min-height: 64px; }
       #bet-spot { min-height: 84px; }
-      .logo { width: 28px; height: 28px; }
+      #patch-btn { width: 28px; height: 28px; }
     }
     @media (prefers-reduced-motion: reduce) {
       .card-inner, .sheet, .card.deal, .stack-chip.pop { transition: none; animation: none; }
@@ -827,7 +862,9 @@
 <body>
   <div id="app">
     <header>
-      <img class="logo" src="./blackjack-icon.png" alt="" />
+      <button type="button" id="patch-btn" aria-label="패치노트">
+        <img src="./blackjack-icon.png" alt="" />
+      </button>
       <div class="titles">
         <h1>루이 블랙잭</h1>
         <p class="rule">블랙잭 3:2 · 페어 5·10·30배 · 인슈어런스 2배</p>
@@ -908,6 +945,13 @@
       </form>
       <p id="code-msg"></p>
     </div>
+    <div id="patch" hidden>
+      <div class="history-head">
+        <h2>패치노트</h2>
+        <button type="button" id="patch-close" aria-label="닫기">×</button>
+      </div>
+      <div id="patch-list"></div>
+    </div>
     <div id="history" hidden>
       <div class="history-head">
         <div>
@@ -938,7 +982,44 @@
     const HISTORY_KEY = "luise-blackjack-history-v1";
     const ROUND_KEY = "luise-blackjack-rounds-v1";
     const DOUBLE_NOTICE_KEY = "luise-blackjack-double-notice-v1";
-    const APP_VERSION = "1";
+    const APP_VERSION = "2";
+    const PATCH_NOTES = [
+      {
+        version: "2",
+        date: "2026.10.11",
+        items: ["왼쪽 루이 아이콘을 누르면 패치노트를 볼 수 있습니다."],
+      },
+      {
+        version: "1",
+        date: "2026.10.11",
+        items: [
+          "최근 기록 상단에 버전이 표시됩니다.",
+          "홈 화면에서 새 버전이 있으면 바로 업데이트됩니다.",
+          "2배 이벤트는 13판마다 열립니다.",
+        ],
+      },
+      {
+        version: "",
+        date: "2026.10.05",
+        items: [
+          "시작 금액은 $0입니다. 코드로 충전합니다.",
+          "서렌더를 추가했습니다. 딜러의 열린 카드가 A이면 서렌더할 수 없습니다.",
+          "보유 금액 옆에 최고 금액이 표시됩니다.",
+          "$500 계란, $1,000 멜론 칩을 추가했습니다.",
+        ],
+      },
+      {
+        version: "",
+        date: "2026.09.28",
+        items: [
+          "최근 10판 기록을 볼 수 있습니다.",
+          "무승부는 무승부로 표시됩니다.",
+          "10, J, Q, K처럼 같은 값이면 스플릿할 수 있습니다.",
+          "딜러가 버스트하면 플레이어가 이깁니다.",
+          "페어는 같은 숫자 5배, 같은 색 10배, 같은 문양 30배입니다.",
+        ],
+      },
+    ];
     const CODE_AMOUNTS = {
       L260123: 100,
       M020521: 500,
@@ -1147,7 +1228,23 @@
         </article>`;
       }).join("");
     }
+    function renderPatchNotes() {
+      $("patch-list").innerHTML = PATCH_NOTES.map((note) => {
+        const title = note.version ? "버전 " + note.version : "업데이트";
+        const items = note.items.map((item) => "<li>" + item + "</li>").join("");
+        return `<article class="patch-note"><h3>${title}</h3><time>${note.date}</time><ul>${items}</ul></article>`;
+      }).join("");
+    }
+    function openPatch() {
+      closeHistory();
+      renderPatchNotes();
+      $("patch").hidden = false;
+    }
+    function closePatch() {
+      $("patch").hidden = true;
+    }
     function openHistory() {
+      closePatch();
       $("app-version").textContent = APP_VERSION;
       renderHistory();
       $("history").hidden = false;
@@ -2349,6 +2446,8 @@
     });
     $("history-btn").addEventListener("click", openHistory);
     $("history-close").addEventListener("click", closeHistory);
+    $("patch-btn").addEventListener("click", openPatch);
+    $("patch-close").addEventListener("click", closePatch);
     $("code-btn").addEventListener("click", () => {
       if ($("code-box").hidden) openCodeBox();
       else closeCodeBox();
