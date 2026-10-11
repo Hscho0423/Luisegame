@@ -1,5 +1,5 @@
-/** 배포할 때마다 숫자를 올리세요 (apple_game.html의 APP_BUILD와 맞추면 좋음) */
-const SW_BUILD = "10";
+/** 캐시 방식을 바꿀 때만 올리세요. 게임 수정은 네트워크에서 바로 받습니다. */
+const SW_BUILD = "11";
 
 const CACHE_NAME = "loui-game-assets-" + SW_BUILD;
 
@@ -38,29 +38,33 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-
-  // HTML·내비게이션은 SW가 건드리지 않음 → 항상 네트워크 최신본
-  if (isHtmlRequest(event.request)) return;
-
-  // service-worker.js 본인은 항상 네트워크에서
+function shouldSkipCache(request) {
   try {
-    if (new URL(event.request.url).pathname.endsWith("service-worker.js")) return;
+    const url = new URL(request.url);
+    if (url.pathname.endsWith("service-worker.js")) return true;
+    if (url.searchParams.has("t") || url.searchParams.has("v")) return true;
   } catch (_) {
     /* ignore */
   }
+  return false;
+}
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
+  if (shouldSkipCache(event.request)) return;
+
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(event.request, { cache: "no-store" });
+      if (response && response.ok && !isHtmlRequest(event.request)) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+      }
+      return response;
+    } catch (_) {
+      const cached = await caches.match(event.request);
       if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        }
-        return response;
-      });
-    })
-  );
+      throw _;
+    }
+  })());
 });

@@ -112,6 +112,19 @@
       padding: 10px 10px;
       white-space: nowrap;
     }
+    #update-btn {
+      margin: 0 14px 8px;
+      border: 0;
+      border-radius: 12px;
+      background: #ffe08a;
+      color: #3d2b00;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 8px 12px;
+    }
+    #update-btn[hidden] { display: none; }
+    #update-btn:disabled { opacity: .6; }
     #history {
       position: absolute;
       inset: 0;
@@ -828,6 +841,7 @@
       </div>
       <button type="button" id="history-btn">최근기록</button>
     </header>
+    <button type="button" id="update-btn" hidden>업데이트</button>
 
     <main id="table">
       <section id="dealer-zone">
@@ -909,7 +923,7 @@
     </div>
   </div>
 
-  <script>
+  <script id="game-script">
     const BANK_KEY = "luise-blackjack-bank-v3";
     const PEAK_KEY = "luise-blackjack-peak-v1";
     const HISTORY_KEY = "luise-blackjack-history-v1";
@@ -2343,6 +2357,61 @@
     setMessage(bank < 10 ? "칩이 부족해요" : "칩을 올려 주세요");
     syncDoubleRound();
     renderChrome();
+
+    const updateBtn = $("update-btn");
+    function normalizedLength(text) {
+      return text.replace(/\r\n/g, "\n").length;
+    }
+    function runningStamp() {
+      const style = document.querySelector("style");
+      const script = document.getElementById("game-script");
+      return normalizedLength(style ? style.textContent : "") + ":" + normalizedLength(script ? script.textContent : "");
+    }
+    function remoteStamp(html) {
+      const style = html.match(/<style>([\s\S]*?)<\/style>/);
+      const script = html.match(/<script id="game-script">([\s\S]*?)<\/script>/);
+      return normalizedLength(style ? style[1] : "") + ":" + normalizedLength(script ? script[1] : "");
+    }
+    async function checkGameUpdate() {
+      if (!updateBtn.hidden) return;
+      try {
+        const url = new URL("blackjack.html", location.href);
+        url.searchParams.set("t", String(Date.now()));
+        const res = await fetch(url.href, { cache: "no-store" });
+        if (!res.ok) return;
+        const html = await res.text();
+        if (remoteStamp(html) !== runningStamp()) updateBtn.hidden = false;
+      } catch (_) {
+        /* 오프라인이면 지금 버전으로 계속 */
+      }
+    }
+    async function applyGameUpdate() {
+      updateBtn.disabled = true;
+      try {
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
+      } catch (_) {
+        /* ignore */
+      }
+      const url = new URL(location.href);
+      url.searchParams.set("v", String(Date.now()));
+      location.replace(url.href);
+    }
+    updateBtn.addEventListener("click", applyGameUpdate);
+    checkGameUpdate();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") checkGameUpdate();
+    });
+    setInterval(checkGameUpdate, 60000);
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js", { scope: "./", updateViaCache: "none" }).then((reg) => {
+        reg.update();
+      }).catch(() => {
+        /* file:// 또는 오프라인 */
+      });
+    }
 
   </script>
 </body>
