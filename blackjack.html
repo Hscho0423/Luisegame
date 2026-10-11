@@ -143,6 +143,12 @@
       padding: calc(12px + env(safe-area-inset-top)) 14px 10px;
     }
     .history-head h2 { margin: 0; font-size: 20px; }
+    .history-version {
+      margin: 2px 0 0;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: .65;
+    }
     #history-close {
       width: 40px;
       height: 40px;
@@ -904,7 +910,10 @@
     </div>
     <div id="history" hidden>
       <div class="history-head">
-        <h2>최근 기록</h2>
+        <div>
+          <h2>최근 기록</h2>
+          <p class="history-version">버전 <span id="app-version"></span></p>
+        </div>
         <button type="button" id="history-close" aria-label="닫기">×</button>
       </div>
       <div id="history-list"></div>
@@ -929,6 +938,7 @@
     const HISTORY_KEY = "luise-blackjack-history-v1";
     const ROUND_KEY = "luise-blackjack-rounds-v1";
     const DOUBLE_NOTICE_KEY = "luise-blackjack-double-notice-v1";
+    const APP_VERSION = "1";
     const CODE_AMOUNTS = {
       L260123: 100,
       M020521: 500,
@@ -1138,6 +1148,7 @@
       }).join("");
     }
     function openHistory() {
+      $("app-version").textContent = APP_VERSION;
       renderHistory();
       $("history").hidden = false;
     }
